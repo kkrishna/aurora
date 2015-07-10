@@ -64,9 +64,6 @@ public class ExecutorSettingsLoader {
         : "";
     Optional<String> executorFlags = Optional
         .<String>fromNullable(jsonExecSetting.getAsJsonPrimitive("executorFlags").getAsString());
-    String executorCommandValue = (jsonExecSetting.getAsJsonPrimitive("commandValue") != null)
-        ? jsonExecSetting.getAsJsonPrimitive("commandValue").getAsString()
-        : "";
 
     JsonObject executorOverhead = jsonExecSetting.getAsJsonObject("executorOverhead");
 

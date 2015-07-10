@@ -13,8 +13,10 @@
  */
 package org.apache.aurora.scheduler.app;
 
+import java.io.FileNotFoundException;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -195,21 +197,14 @@ public class SchedulerMain extends AbstractApplication {
         .add(new AbstractModule() {
           @Override
           protected void configure() {
-            Resources executorOverhead = new Resources(
-                EXECUTOR_OVERHEAD_CPUS.get(),
-                EXECUTOR_OVERHEAD_RAM.get(),
-                Amount.of(0L, Data.MB),
-                0);
+            try {
+              Map<String, ExecutorSettings> executors = ExecutorSettingsLoader.load("etc/executors.json");
 
-            bind(ExecutorSettings.class)
-                .toInstance(ExecutorSettings.newBuilder()
-                    .setExecutorPath(THERMOS_EXECUTOR_PATH.get())
-                    .setExecutorResources(THERMOS_EXECUTOR_RESOURCES.get())
-                    .setThermosObserverRoot(THERMOS_OBSERVER_ROOT.get())
-                    .setExecutorFlags(Optional.fromNullable(THERMOS_EXECUTOR_FLAGS.get()))
-                    .setExecutorOverhead(executorOverhead)
-                    .setGlobalContainerMounts(GLOBAL_CONTAINER_MOUNTS.get())
-                    .build());
+              bind(ExecutorSettings.class).toInstance(executors.get("thermos"));
+
+            } catch (FileNotFoundException e) {
+              e.printStackTrace();
+            }
           }
         })
         .add(getMesosModules())
