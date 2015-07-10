@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
  * Configuration for the executor to run, and resource overhead required for it.
  */
 public final class ExecutorSettings {
+  private final String executorName;
   private final String executorPath;
   private final List<String> executorResources;
   private final String thermosObserverRoot;
@@ -35,6 +36,7 @@ public final class ExecutorSettings {
   private final List<Volume> globalContainerMounts;
 
   ExecutorSettings(
+      String executorName,
       String executorPath,
       List<String> executorResources,
       String thermosObserverRoot,
@@ -42,6 +44,7 @@ public final class ExecutorSettings {
       Resources executorOverhead,
       List<Volume> globalContainerMounts) {
 
+    this.executorName = requireNonNull(executorName);
     this.executorPath = requireNonNull(executorPath);
     this.executorResources = requireNonNull(executorResources);
     this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
@@ -49,6 +52,8 @@ public final class ExecutorSettings {
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
   }
+
+  public String getExecutorName() { return executorName;  }
 
   public String getExecutorPath() {
     return executorPath;
@@ -79,6 +84,7 @@ public final class ExecutorSettings {
   }
 
   public static final class Builder {
+    private String executorName;
     private String executorPath;
     private List<String> executorResources;
     private String thermosObserverRoot;
@@ -91,6 +97,11 @@ public final class ExecutorSettings {
       executorFlags = Optional.absent();
       executorOverhead = Resources.NONE;
       globalContainerMounts = ImmutableList.of();
+    }
+
+    public Builder setExecutorName(String executorName) {
+      this.executorName = executorName;
+      return this;
     }
 
     public Builder setExecutorPath(String executorPath) {
@@ -125,6 +136,7 @@ public final class ExecutorSettings {
 
     public ExecutorSettings build() {
       return new ExecutorSettings(
+          executorName,
           executorPath,
           executorResources,
           thermosObserverRoot,
