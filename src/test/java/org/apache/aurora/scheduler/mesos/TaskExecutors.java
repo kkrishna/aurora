@@ -31,12 +31,14 @@ public final class TaskExecutors {
 
   public static final ExecutorSettings NO_OVERHEAD_EXECUTOR =
       ExecutorSettings.newBuilder()
+          .setExecutorName("no-overhead")
           .setExecutorPath(EXECUTOR_PATH)
           .setThermosObserverRoot("/var/run/thermos")
           .build();
 
   public static final ExecutorSettings SOME_OVERHEAD_EXECUTOR =
       ExecutorSettings.newBuilder()
+          .setExecutorName("some-overhead")
           .setExecutorPath(EXECUTOR_PATH)
           .setThermosObserverRoot("/var/run/thermos")
           .setExecutorOverhead(

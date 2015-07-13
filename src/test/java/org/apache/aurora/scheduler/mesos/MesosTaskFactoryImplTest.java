@@ -74,9 +74,11 @@ public class MesosTaskFactoryImplTest {
   private MesosTaskFactory taskFactory;
   private ExecutorSettings config;
 
-  private static final ExecutorInfo DEFAULT_EXECUTOR = ExecutorInfo.newBuilder()
-      .setExecutorId(MesosTaskFactoryImpl.getExecutorId(TASK.getTaskId()))
-      .setName(MesosTaskFactoryImpl.EXECUTOR_NAME)
+  private static final ExecutorInfo NO_OVERHEAD_EXECUTOR_INFO = ExecutorInfo.newBuilder()
+      .setExecutorId(
+          Protos.ExecutorID.newBuilder().setValue(
+              NO_OVERHEAD_EXECUTOR.getExecutorName() + "-" + TASK.getTaskId()).build())
+      .setName(NO_OVERHEAD_EXECUTOR.getExecutorName())
       .setSource(MesosTaskFactoryImpl.getInstanceSourceName(TASK.getTask(), TASK.getInstanceId()))
       .addAllResources(MesosTaskFactoryImpl.RESOURCES_EPSILON.toResourceList())
       .setCommand(CommandInfo.newBuilder()
@@ -85,8 +87,21 @@ public class MesosTaskFactoryImplTest {
               .setExecutable(true)))
       .build();
 
-  private static final ExecutorInfo EXECUTOR_WITH_WRAPPER =
-      ExecutorInfo.newBuilder(DEFAULT_EXECUTOR)
+  private static final ExecutorInfo SOME_OVERHEAD_EXECUTOR_INFO = ExecutorInfo.newBuilder()
+      .setExecutorId(
+          Protos.ExecutorID.newBuilder().setValue(
+              SOME_OVERHEAD_EXECUTOR.getExecutorName() + "-" + TASK.getTaskId()).build())
+      .setName(SOME_OVERHEAD_EXECUTOR.getExecutorName())
+      .setSource(MesosTaskFactoryImpl.getInstanceSourceName(TASK.getTask(), TASK.getInstanceId()))
+      .addAllResources(MesosTaskFactoryImpl.RESOURCES_EPSILON.toResourceList())
+      .setCommand(CommandInfo.newBuilder()
+          .setValue("./executor.pex")
+          .addUris(URI.newBuilder().setValue(SOME_OVERHEAD_EXECUTOR.getExecutorPath())
+              .setExecutable(true)))
+      .build();
+
+  private static final ExecutorInfo NO_OVERHEAD_EXECUTOR_INFO_WITH_WRAPPER =
+      ExecutorInfo.newBuilder(NO_OVERHEAD_EXECUTOR_INFO)
           .setCommand(CommandInfo.newBuilder()
               .setValue("./executor_wrapper.sh")
               .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
@@ -94,6 +109,14 @@ public class MesosTaskFactoryImplTest {
               .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true)))
           .build();
 
+  private static final ExecutorInfo SOME_OVERHEAD_EXECUTOR_INFO_WITH_WRAPPER =
+      ExecutorInfo.newBuilder(SOME_OVERHEAD_EXECUTOR_INFO)
+          .setCommand(CommandInfo.newBuilder()
+              .setValue("./executor_wrapper.sh")
+              .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
+                  .setExecutable(true))
+              .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true)))
+          .build();
   @Before
   public void setUp() {
     config = TaskExecutors.SOME_OVERHEAD_EXECUTOR;
@@ -103,7 +126,7 @@ public class MesosTaskFactoryImplTest {
   public void testExecutorInfoUnchanged() {
     taskFactory = new MesosTaskFactoryImpl(config);
     TaskInfo task = taskFactory.createFrom(TASK, SLAVE);
-    assertEquals(DEFAULT_EXECUTOR, task.getExecutor());
+    assertEquals(SOME_OVERHEAD_EXECUTOR_INFO, task.getExecutor());
     checkTaskResources(TASK.getTask(), task);
   }
 
@@ -124,7 +147,7 @@ public class MesosTaskFactoryImplTest {
     config = NO_OVERHEAD_EXECUTOR;
     taskFactory = new MesosTaskFactoryImpl(config);
     TaskInfo task = taskFactory.createFrom(TASK, SLAVE);
-    assertEquals(DEFAULT_EXECUTOR, task.getExecutor());
+    assertEquals(NO_OVERHEAD_EXECUTOR_INFO, task.getExecutor());
 
     // Simulate the upsizing needed for the task to meet the minimum thermos requirements.
     TaskConfig dummyTask = TASK.getTask().newBuilder()
@@ -175,6 +198,7 @@ public class MesosTaskFactoryImplTest {
   @Test(expected = NullPointerException.class)
   public void testInvalidExecutorSettings() {
     ExecutorSettings.newBuilder()
+        .setExecutorName("")
         .setExecutorPath(null)
         .setThermosObserverRoot("")
         .build();
@@ -183,19 +207,21 @@ public class MesosTaskFactoryImplTest {
   @Test
   public void testExecutorAndWrapper() {
     config = ExecutorSettings.newBuilder()
+        .setExecutorName(NO_OVERHEAD_EXECUTOR.getExecutorName())
         .setExecutorPath(EXECUTOR_WRAPPER_PATH)
-        .setExecutorResources(ImmutableList.of(SOME_OVERHEAD_EXECUTOR.getExecutorPath()))
+        .setExecutorResources(ImmutableList.of(NO_OVERHEAD_EXECUTOR.getExecutorPath()))
         .setThermosObserverRoot("/var/run/thermos")
-        .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
+        .setExecutorOverhead(NO_OVERHEAD_EXECUTOR.getExecutorOverhead())
         .build();
     taskFactory = new MesosTaskFactoryImpl(config);
     TaskInfo taskInfo = taskFactory.createFrom(TASK, SLAVE);
-    assertEquals(EXECUTOR_WITH_WRAPPER, taskInfo.getExecutor());
+    assertEquals(NO_OVERHEAD_EXECUTOR_INFO_WITH_WRAPPER, taskInfo.getExecutor());
   }
 
   @Test
   public void testGlobalMounts() {
     config = ExecutorSettings.newBuilder()
+        .setExecutorName(SOME_OVERHEAD_EXECUTOR.getExecutorName())
         .setExecutorPath(EXECUTOR_WRAPPER_PATH)
         .setExecutorResources(ImmutableList.of(SOME_OVERHEAD_EXECUTOR.getExecutorPath()))
         .setThermosObserverRoot("/var/run/thermos")

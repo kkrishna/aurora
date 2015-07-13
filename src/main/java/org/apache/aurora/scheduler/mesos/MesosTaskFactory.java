@@ -68,23 +68,25 @@ public interface MesosTaskFactory {
   // TODO(wfarner): Move this class to its own file to reduce visibility to package private.
   class MesosTaskFactoryImpl implements MesosTaskFactory {
     private static final Logger LOG = Logger.getLogger(MesosTaskFactoryImpl.class.getName());
-    private static final String EXECUTOR_PREFIX = "thermos-";
+    private final String EXECUTOR_PREFIX;
 
     /**
      * Name to associate with task executors.
      */
     @VisibleForTesting
-    static final String EXECUTOR_NAME = "aurora.task";
+    final String EXECUTOR_NAME;
 
     private final ExecutorSettings executorSettings;
 
     @Inject
     MesosTaskFactoryImpl(ExecutorSettings executorSettings) {
       this.executorSettings = requireNonNull(executorSettings);
+      EXECUTOR_NAME = executorSettings.getExecutorName();
+      EXECUTOR_PREFIX = EXECUTOR_NAME + "-";
     }
 
     @VisibleForTesting
-    static ExecutorID getExecutorId(String taskId) {
+    ExecutorID getExecutorId(String taskId) {
       return ExecutorID.newBuilder().setValue(EXECUTOR_PREFIX + taskId).build();
     }
 
