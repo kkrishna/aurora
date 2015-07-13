@@ -22,7 +22,6 @@ import java.util.logging.Logger;
 import javax.inject.Inject;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
@@ -50,7 +49,6 @@ import com.twitter.common.zookeeper.guice.client.flagged.FlaggedClientConfig;
 
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.SchedulerLifecycle;
-import org.apache.aurora.scheduler.configuration.Resources;
 import org.apache.aurora.scheduler.cron.quartz.CronModule;
 import org.apache.aurora.scheduler.http.HttpService;
 import org.apache.aurora.scheduler.log.mesos.MesosLogStreamModule;
@@ -83,6 +81,13 @@ public class SchedulerMain extends AbstractApplication {
 
   @CmdLine(name = "thermos_executor_path", help = "Path to the thermos executor entry point.")
   private static final Arg<String> THERMOS_EXECUTOR_PATH = Arg.create();
+
+  @CmdLine(name = "executor_name",
+      help = "Name of executor to be used by Aurora (by default thermos.)")
+  private static final Arg<String> EXECUTOR_NAME = Arg.create("thermos");
+
+  @CmdLine(name = "executor_config_path", help = "Path to executor config JSON file")
+  private static final Arg<String> EXECUTORS_CONFIG_PATH = Arg.create("");
 
   @CmdLine(name = "thermos_executor_resources",
       help = "A comma seperated list of additional resources to copy into the sandbox."
@@ -198,9 +203,10 @@ public class SchedulerMain extends AbstractApplication {
           @Override
           protected void configure() {
             try {
-              Map<String, ExecutorSettings> executors = ExecutorSettingsLoader.load("etc/executors.json");
+              Map<String, ExecutorSettings> executors = ExecutorSettingsLoader
+                  .load(EXECUTORS_CONFIG_PATH.get());
 
-              bind(ExecutorSettings.class).toInstance(executors.get("thermos"));
+              bind(ExecutorSettings.class).toInstance(executors.get(EXECUTOR_NAME.get()));
 
             } catch (FileNotFoundException e) {
               e.printStackTrace();
