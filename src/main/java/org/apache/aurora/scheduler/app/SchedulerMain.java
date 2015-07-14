@@ -86,7 +86,7 @@ public class SchedulerMain extends AbstractApplication {
       help = "Name of executor to be used by Aurora (by default thermos.)")
   private static final Arg<String> EXECUTOR_NAME = Arg.create("thermos");
 
-  @CmdLine(name = "executor_config_path", help = "Path to executor config JSON file")
+  @CmdLine(name = "executors_config_path", help = "Path to executor config JSON file")
   private static final Arg<String> EXECUTORS_CONFIG_PATH = Arg.create("");
 
   @CmdLine(name = "thermos_executor_resources",

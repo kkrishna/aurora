@@ -166,14 +166,21 @@ public interface MesosTaskFactory {
         ITaskConfig config,
         TaskInfo.Builder taskBuilder) {
 
-      CommandInfo commandInfo = CommandUtil.create(
-          executorSettings.getExecutorPath(),
-          executorSettings.getExecutorResources(),
-          "./",
-          executorSettings.getExecutorFlags()).build();
-
-      ExecutorInfo.Builder executorBuilder = configureTaskForExecutor(task, config, commandInfo);
-      taskBuilder.setExecutor(executorBuilder.build());
+      if(executorSettings.getExecutorName().equals("mesos-command")) {
+        taskBuilder.setCommand(CommandInfo.newBuilder()
+            .setShell(true)
+            .setValue(task.getTask().getExecutorConfig().getData())
+            .build());
+      } else {
+         CommandInfo commandBuilder = CommandUtil.create(
+            executorSettings.getExecutorPath(),
+            executorSettings.getExecutorResources(),
+            "./",
+            executorSettings.getExecutorFlags()).build();
+        ExecutorInfo.Builder executorBuilder = configureTaskForExecutor(
+            task, config, commandBuilder);
+        taskBuilder.setExecutor(executorBuilder.build());
+      }
     }
 
     private void configureTaskForDockerContainer(
@@ -209,6 +216,7 @@ public interface MesosTaskFactory {
         IAssignedTask task,
         ITaskConfig config,
         CommandInfo commandInfo) {
+
 
       return ExecutorInfo.newBuilder()
           .setCommand(commandInfo)
