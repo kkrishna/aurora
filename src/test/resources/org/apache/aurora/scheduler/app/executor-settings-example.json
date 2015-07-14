@@ -1,0 +1,37 @@
+{
+  "executors":[
+    {
+      "executorName": "thermos",
+      "executorPath":"/home/vagrant/aurora/dist/thermos_executor.pex",
+      "executorResources":[
+      ],
+      "thermosObserverRoot":"/var/run/thermos",
+      "executorFlags":"--announcer-enable --announcer-ensemble localhost:2181",
+      "executorOverhead":{
+        "numCpus":0.25,
+        "disk_mb":0,
+        "ram_mb":128,
+        "numPorts":0
+      },
+      "globalContainerMounts":[
+      ]
+    },
+
+   {
+     "executorName" : "mesos-command",
+      "executorPath":"",
+      "executorResources":[
+      ],
+      "executorFlags":"",
+      "executorOverhead":{
+        "numCpus":.25,
+        "disk_mb":0,
+        "ram_mb":2,
+        "numPorts":0
+      },
+      "globalContainerMounts":[
+
+      ]
+    }
+  ]
+}
