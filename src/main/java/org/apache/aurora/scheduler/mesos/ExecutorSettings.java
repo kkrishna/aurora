@@ -53,7 +53,9 @@ public final class ExecutorSettings {
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
   }
 
-  public String getExecutorName() { return executorName;  }
+  public String getExecutorName() {
+    return executorName;
+  }
 
   public String getExecutorPath() {
     return executorPath;

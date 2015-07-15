@@ -13,7 +13,6 @@
  */
 package org.apache.aurora.scheduler.app;
 
-import java.io.FileNotFoundException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +21,7 @@ import java.util.logging.Logger;
 import javax.inject.Inject;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
@@ -38,8 +38,6 @@ import com.twitter.common.args.constraints.NotEmpty;
 import com.twitter.common.args.constraints.NotNull;
 import com.twitter.common.inject.Bindings;
 import com.twitter.common.logging.RootLogConfig;
-import com.twitter.common.quantity.Amount;
-import com.twitter.common.quantity.Data;
 import com.twitter.common.zookeeper.Group;
 import com.twitter.common.zookeeper.SingletonService;
 import com.twitter.common.zookeeper.SingletonService.LeadershipListener;
@@ -47,7 +45,6 @@ import com.twitter.common.zookeeper.guice.client.ZooKeeperClientModule;
 import com.twitter.common.zookeeper.guice.client.ZooKeeperClientModule.ClientConfig;
 import com.twitter.common.zookeeper.guice.client.flagged.FlaggedClientConfig;
 
-import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.SchedulerLifecycle;
 import org.apache.aurora.scheduler.cron.quartz.CronModule;
 import org.apache.aurora.scheduler.http.HttpService;
@@ -79,45 +76,12 @@ public class SchedulerMain extends AbstractApplication {
   @CmdLine(name = "serverset_path", help = "ZooKeeper ServerSet path to register at.")
   private static final Arg<String> SERVERSET_PATH = Arg.create();
 
-  @CmdLine(name = "thermos_executor_path", help = "Path to the thermos executor entry point.")
-  private static final Arg<String> THERMOS_EXECUTOR_PATH = Arg.create();
-
   @CmdLine(name = "executor_name",
       help = "Name of executor to be used by Aurora (by default thermos.)")
   private static final Arg<String> EXECUTOR_NAME = Arg.create("thermos");
 
   @CmdLine(name = "executors_config_path", help = "Path to executor config JSON file")
   private static final Arg<String> EXECUTORS_CONFIG_PATH = Arg.create("");
-
-  @CmdLine(name = "thermos_executor_resources",
-      help = "A comma seperated list of additional resources to copy into the sandbox."
-          + "Note: if thermos_executor_path is not the thermos_executor.pex file itself, "
-          + "this must include it.")
-  private static final Arg<List<String>> THERMOS_EXECUTOR_RESOURCES =
-      Arg.create(ImmutableList.of());
-
-  @CmdLine(name = "thermos_executor_flags",
-      help = "Extra arguments to be passed to the thermos executor")
-  private static final Arg<String> THERMOS_EXECUTOR_FLAGS = Arg.create(null);
-
-  @CmdLine(name = "thermos_observer_root",
-      help = "Path to the thermos observer root (by default /var/run/thermos.)")
-  private static final Arg<String> THERMOS_OBSERVER_ROOT = Arg.create("/var/run/thermos");
-
-  /**
-   * Extra CPU allocated for each executor.
-   */
-  @CmdLine(name = "thermos_executor_cpu",
-      help = "The number of CPU cores to allocate for each instance of the executor.")
-  private static final Arg<Double> EXECUTOR_OVERHEAD_CPUS = Arg.create(0.25);
-
-  /**
-   * Extra RAM allocated for the executor.
-   */
-  @CmdLine(name = "thermos_executor_ram",
-      help = "The amount of RAM to allocate for each instance of the executor.")
-  private static final Arg<Amount<Long, Data>> EXECUTOR_OVERHEAD_RAM =
-      Arg.create(Amount.of(128L, Data.MB));
 
   @CmdLine(name = "extra_modules",
       help = "A list of modules that provide additional functionality.")
@@ -127,11 +91,6 @@ public class SchedulerMain extends AbstractApplication {
   // TODO(Suman Karumuri): Rename viz_job_url_prefix to stats_job_url_prefix for consistency.
   @CmdLine(name = "viz_job_url_prefix", help = "URL prefix for job container stats.")
   private static final Arg<String> STATS_URL_PREFIX = Arg.create("");
-
-  @CmdLine(name = "global_container_mounts",
-      help = "A comma seperated list of mount points (in host:container form) to mount "
-          + "into all (non-mesos) containers.")
-  private static final Arg<List<Volume>> GLOBAL_CONTAINER_MOUNTS = Arg.create(ImmutableList.of());
 
   @Inject private SingletonService schedulerService;
   @Inject private HttpService httpService;
@@ -206,10 +165,13 @@ public class SchedulerMain extends AbstractApplication {
               Map<String, ExecutorSettings> executors = ExecutorSettingsLoader
                   .load(EXECUTORS_CONFIG_PATH.get());
 
-              bind(ExecutorSettings.class).toInstance(executors.get(EXECUTOR_NAME.get()));
+              bind(ExecutorSettings.class).toInstance(
+                  Preconditions.checkNotNull(
+                      executors.get(EXECUTOR_NAME.get()),
+                          "Executor " + EXECUTOR_NAME.get() + "not found"));
 
-            } catch (FileNotFoundException e) {
-              e.printStackTrace();
+            } catch (ExecutorSettingsLoader.ExecutorSettingsConfigException e) {
+              LOG.severe("Executors setting config error: " + e.getMessage());
             }
           }
         })

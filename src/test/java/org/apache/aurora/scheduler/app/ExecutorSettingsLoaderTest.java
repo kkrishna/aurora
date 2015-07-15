@@ -13,26 +13,27 @@
  */
 package org.apache.aurora.scheduler.app;
 
+import java.util.Map;
+
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.Map;
-
-import java.io.FileNotFoundException;
+import static org.junit.Assert.assertFalse;
 
 public class ExecutorSettingsLoaderTest {
   private static final String EXAMPLE_RESOURCE = "executor-settings-example.json";
   private static final String NONEXISTENT_RESOURCE = "executor-settings-nonexistent.json";
 
   @Test
-  public void parse() throws FileNotFoundException  {
-      Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
-          getClass().getResource(EXAMPLE_RESOURCE).getFile());
+  public void parse() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+    Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
+        getClass().getResource(EXAMPLE_RESOURCE).getFile());
+
+    assertFalse(test.isEmpty());
   }
 
-  @Test(expected = FileNotFoundException.class)
-  public void testNonExistentFile() throws FileNotFoundException {
+  @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)
+  public void testNonExistentFile() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
     ExecutorSettingsLoader.load(NONEXISTENT_RESOURCE);
   }
 }

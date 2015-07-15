@@ -13,20 +13,26 @@
  */
 package org.apache.aurora.scheduler.app;
 
-import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 
-import com.google.gson.*;
 import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
 
@@ -35,33 +41,30 @@ import org.apache.aurora.scheduler.configuration.Resources;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
 /**
- * Executor configuration file loader
+ * Executor configuration file loader.
  */
-public class ExecutorSettingsLoader {
+public final class ExecutorSettingsLoader {
   private static final Logger LOG = Logger.getLogger(ExecutorSettingsLoader.class.getName());
   /**
-   * No instances of this class should exist
+   * No instances of this class should exist.
    */
-  private ExecutorSettingsLoader(){
+  private ExecutorSettingsLoader()  {
   }
 
   /**
-   * Private helper function to simplify code
+   * Private helper function to simplify code.
    */
-  private static ExecutorSettings parseExecutorSetting(JsonObject jsonExecSetting){
+  private static ExecutorSettings parseExecutorSetting(JsonObject jsonExecSetting) {
 
     String executorName = jsonExecSetting.getAsJsonPrimitive("executorName").getAsString();
 
-    if(!executorName.equals("mesos-command")) {
-      //TODO(rdelvalle): Require more stuff if not mesos
-    }
-
-    String executorPath = (jsonExecSetting.getAsJsonPrimitive("executorPath") != null)
-        ? jsonExecSetting.getAsJsonPrimitive("executorPath").getAsString()
-        : "";
-    String thermosObserver = (jsonExecSetting.getAsJsonPrimitive("thermosObserverRoot") != null)
+    String thermosObserver = "thermos".equals(executorName)
         ? jsonExecSetting.getAsJsonPrimitive("thermosObserverRoot").getAsString()
         : "";
+    String executorPath = jsonExecSetting.getAsJsonPrimitive("executorPath") == null
+        ? ""
+        : jsonExecSetting.getAsJsonPrimitive("executorPath").getAsString();
+
     Optional<String> executorFlags = Optional
         .<String>fromNullable(jsonExecSetting.getAsJsonPrimitive("executorFlags").getAsString());
 
@@ -69,30 +72,30 @@ public class ExecutorSettingsLoader {
 
     //TODO(rdelvalle): Check for nonsense values
     double numCpus = executorOverhead.getAsJsonPrimitive("numCpus").getAsDouble();
-    long disk_mb = executorOverhead.getAsJsonPrimitive("disk_mb").getAsLong();
-    long ram_mb = executorOverhead.getAsJsonPrimitive("ram_mb").getAsLong();
+    long diskMB = executorOverhead.getAsJsonPrimitive("disk_mb").getAsLong();
+    long ramMB = executorOverhead.getAsJsonPrimitive("ram_mb").getAsLong();
     int numPorts = executorOverhead.getAsJsonPrimitive("numPorts").getAsInt();
 
-    Resources executor_overhead_resources = new Resources(numCpus,
-        Amount.of(ram_mb, Data.MB),
-        Amount.of(disk_mb, Data.MB),
+    Resources executorOverheadResources = new Resources(numCpus,
+        Amount.of(ramMB, Data.MB),
+        Amount.of(diskMB, Data.MB),
         numPorts);
 
     JsonArray executorResourses = jsonExecSetting.getAsJsonArray("executorResources");
     List<String> executorResourcesList = new ArrayList<String>();
-    for(JsonElement resource: executorResourses) {
+    for (JsonElement resource: executorResourses) {
       executorResourcesList.add(resource.getAsJsonPrimitive().getAsString());
     }
 
-    JsonArray executorGlobalContainerMounts = jsonExecSetting.getAsJsonArray("globalContainerMounts");
-    List<Volume> global_mounts_list = new ArrayList<Volume>();
+    JsonArray executorGlobalContainerMounts = jsonExecSetting
+        .getAsJsonArray("globalContainerMounts");
+    List<Volume> globalMountsList = new ArrayList<Volume>();
     VolumeParser volParser = new VolumeParser();
-    for(JsonElement mount: executorGlobalContainerMounts) {
+    for (JsonElement mount: executorGlobalContainerMounts) {
       try {
-      global_mounts_list.add(volParser.doParse(mount.getAsString()));
+        globalMountsList.add(volParser.doParse(mount.getAsString()));
 
-      } catch(IllegalArgumentException e)
-      {
+      } catch (IllegalArgumentException e) {
         LOG.warning("Illegal global_mount setting: \"" + mount + "\" for " + executorName);
       }
     }
@@ -103,37 +106,42 @@ public class ExecutorSettingsLoader {
             .setExecutorResources(ImmutableList.<String>copyOf(executorResourcesList))
             .setThermosObserverRoot(thermosObserver)
             .setExecutorFlags(executorFlags)
-            .setGlobalContainerMounts(ImmutableList.<Volume>copyOf(global_mounts_list))
-            .setExecutorOverhead(executor_overhead_resources)
+            .setGlobalContainerMounts(ImmutableList.<Volume>copyOf(globalMountsList))
+            .setExecutorOverhead(executorOverheadResources)
             .build();
   }
 
   public static ImmutableMap<String, ExecutorSettings> load(String configFilePath)
-      throws FileNotFoundException {
+      throws ExecutorSettingsConfigException {
 
     Map<String, ExecutorSettings> executorSettings = new HashMap<String, ExecutorSettings>();
 
     try {
-      BufferedReader fileReader = new BufferedReader(new FileReader(configFilePath));
+      Reader fileReader = new InputStreamReader(new FileInputStream(configFilePath), "UTF8");
 
       JsonParser parser = new JsonParser();
       JsonElement element = parser.parse(fileReader);
       JsonArray executors = element.getAsJsonObject().getAsJsonArray("executors");
 
-      if(executors.isJsonArray()) {
-        for(JsonElement executor: executors) {
-          ExecutorSettings temp = parseExecutorSetting(executor.getAsJsonObject());
-          executorSettings.put(temp.getExecutorName(), temp);
-        }
-      } else {
-        //TODO(rdelvalle): Throw error for malformed config file
+      for (JsonElement executor : executors) {
+        ExecutorSettings temp = parseExecutorSetting(executor.getAsJsonObject());
+        executorSettings.put(temp.getExecutorName(), temp);
       }
 
       return ImmutableMap.<String, ExecutorSettings>copyOf(executorSettings);
 
-    } catch(FileNotFoundException e) {
-      throw e;
+    } catch (FileNotFoundException e) {
+      throw new ExecutorSettingsConfigException("Config file not found", e);
+    } catch (UnsupportedEncodingException e) {
+      throw new ExecutorSettingsConfigException("Config file needs to be in UTF8 format", e);
+    } catch (JsonParseException e) {
+      throw new ExecutorSettingsConfigException("Error parsing JSON", e);
+    }
+  }
 
+  public static class ExecutorSettingsConfigException extends Exception {
+    public ExecutorSettingsConfigException(String message, Throwable cause) {
+      super(message, cause);
     }
   }
 }

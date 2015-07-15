@@ -68,26 +68,26 @@ public interface MesosTaskFactory {
   // TODO(wfarner): Move this class to its own file to reduce visibility to package private.
   class MesosTaskFactoryImpl implements MesosTaskFactory {
     private static final Logger LOG = Logger.getLogger(MesosTaskFactoryImpl.class.getName());
-    private final String EXECUTOR_PREFIX;
+    private final String executorPrefix;
 
     /**
      * Name to associate with task executors.
      */
     @VisibleForTesting
-    final String EXECUTOR_NAME;
+    final String executorName;
 
     private final ExecutorSettings executorSettings;
 
     @Inject
     MesosTaskFactoryImpl(ExecutorSettings executorSettings) {
       this.executorSettings = requireNonNull(executorSettings);
-      EXECUTOR_NAME = executorSettings.getExecutorName();
-      EXECUTOR_PREFIX = EXECUTOR_NAME + "-";
+      executorName = executorSettings.getExecutorName();
+      executorPrefix = executorName + "-";
     }
 
     @VisibleForTesting
     ExecutorID getExecutorId(String taskId) {
-      return ExecutorID.newBuilder().setValue(EXECUTOR_PREFIX + taskId).build();
+      return ExecutorID.newBuilder().setValue(executorPrefix + taskId).build();
     }
 
     private static String getJobSourceName(IJobKey jobkey) {
@@ -166,13 +166,13 @@ public interface MesosTaskFactory {
         ITaskConfig config,
         TaskInfo.Builder taskBuilder) {
 
-      if(executorSettings.getExecutorName().equals("mesos-command")) {
+      if ("mesos-command".equals(executorSettings.getExecutorName())) {
         taskBuilder.setCommand(CommandInfo.newBuilder()
             .setShell(true)
             .setValue(task.getTask().getExecutorConfig().getData())
             .build());
       } else {
-         CommandInfo commandBuilder = CommandUtil.create(
+        CommandInfo commandBuilder = CommandUtil.create(
             executorSettings.getExecutorPath(),
             executorSettings.getExecutorResources(),
             "./",
@@ -217,11 +217,10 @@ public interface MesosTaskFactory {
         ITaskConfig config,
         CommandInfo commandInfo) {
 
-
       return ExecutorInfo.newBuilder()
           .setCommand(commandInfo)
           .setExecutorId(getExecutorId(task.getTaskId()))
-          .setName(EXECUTOR_NAME)
+          .setName(executorName)
           .setSource(getInstanceSourceName(config, task.getInstanceId()))
           .addAllResources(RESOURCES_EPSILON.toResourceList());
     }
