@@ -45,10 +45,10 @@ public final class ExecutorSettings {
       List<Volume> globalContainerMounts) {
 
     this.executorName = requireNonNull(executorName);
-    this.executorPath = requireNonNull(executorPath);
+    this.executorPath = executorPath;
     this.executorResources = requireNonNull(executorResources);
-    this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
-    this.executorFlags = requireNonNull(executorFlags);
+    this.thermosObserverRoot = thermosObserverRoot;
+    this.executorFlags = executorFlags;
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
   }

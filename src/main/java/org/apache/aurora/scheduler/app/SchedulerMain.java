@@ -171,7 +171,7 @@ public class SchedulerMain extends AbstractApplication {
                           "Executor " + EXECUTOR_NAME.get() + "not found"));
 
             } catch (ExecutorSettingsLoader.ExecutorSettingsConfigException e) {
-              LOG.severe("Executors setting config error: " + e.getMessage());
+              LOG.severe("Executors setting configuration error: " + e.getMessage());
             }
           }
         })
