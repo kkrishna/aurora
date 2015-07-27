@@ -161,9 +161,20 @@ import static org.apache.aurora.scheduler.thrift.Responses.ok;
  */
 @DecoratedThrift
 class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
+  private static final int DEFAULT_MAX_TASKS_PER_JOB = 4000;
+  private static final int DEFAULT_MAX_UPDATE_INSTANCE_FAILURES =
+      DEFAULT_MAX_TASKS_PER_JOB * 5;
+
   @Positive
   @CmdLine(name = "max_tasks_per_job", help = "Maximum number of allowed tasks in a single job.")
-  public static final Arg<Integer> MAX_TASKS_PER_JOB = Arg.create(4000);
+  public static final Arg<Integer> MAX_TASKS_PER_JOB = Arg.create(DEFAULT_MAX_TASKS_PER_JOB);
+
+  @Positive
+  @CmdLine(name = "max_update_instance_failures", help = "Upper limit on the number of "
+      + "failures allowed during a job update. This helps cap potentially unbounded entries into "
+      + "storage.")
+  public static final Arg<Integer> MAX_UPDATE_INSTANCE_FAILURES = Arg.create(
+      DEFAULT_MAX_UPDATE_INSTANCE_FAILURES);
 
   // This number is derived from the maximum file name length limit on most UNIX systems, less
   // the number of characters we've observed being added by mesos for the executor ID, prefix, and
@@ -175,7 +186,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
 
   private static final Function<IScheduledTask, String> GET_ROLE = Functions.compose(
       task -> task.getJob().getRole(),
-      Tasks.SCHEDULED_TO_INFO);
+      Tasks::getConfig);
 
   private final NonVolatileStorage storage;
   private final LockManager lockManager;
@@ -466,7 +477,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
       throws LockException {
 
     ImmutableSet<IJobKey> uniqueKeys = FluentIterable.from(tasks)
-        .transform(Tasks.SCHEDULED_TO_JOB_KEY)
+        .transform(Tasks::getJob)
         .toSet();
 
     // Validate lock against every unique job key derived from the tasks.
@@ -489,7 +500,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
     // role-scoped query.
     ImmutableSet.Builder<String> targetRoles = ImmutableSet.builder();
     Set<IJobKey> keys = JobKeys.from(taskQuery).or(ImmutableSet.of());
-    targetRoles.addAll(FluentIterable.from(keys).transform(JobKeys.TO_ROLE));
+    targetRoles.addAll(FluentIterable.from(keys).transform(IJobKey::getRole));
 
     if (taskQuery.get().isSetRole()) {
       targetRoles.add(taskQuery.get().getRole());
@@ -620,7 +631,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
         LOG.info("Restarting shards matching " + query);
         storage.write(new MutateWork.NoResult.Quiet() {
           @Override
-          protected void execute(MutableStoreProvider storeProvider) {
+          public void execute(MutableStoreProvider storeProvider) {
             for (String taskId : Tasks.ids(matchingTasks)) {
               stateManager.changeState(
                   storeProvider,
@@ -655,7 +666,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
     try {
       storage.write(new MutateWork.NoResult<QuotaException>() {
         @Override
-        protected void execute(MutableStoreProvider store) throws QuotaException {
+        public void execute(MutableStoreProvider store) throws QuotaException {
           quotaManager.saveQuota(
               ownerRole,
               IResourceAggregate.build(resourceAggregate),
@@ -718,7 +729,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
 
     storage.write(new MutateWork.NoResult.Quiet() {
       @Override
-      protected void execute(MutableStoreProvider storeProvider) {
+      public void execute(MutableStoreProvider storeProvider) {
         stateManager.changeState(
             storeProvider,
             taskId,
@@ -856,7 +867,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
             .active());
     Optional<IAssignedTask> task =
         Optional.fromNullable(Iterables.getOnlyElement(tasks, null))
-            .transform(Tasks.SCHEDULED_TO_ASSIGNED);
+            .transform(IScheduledTask::getAssignedTask);
 
     if (task.isPresent()) {
       if (task.get().getTask().newBuilder().equals(instanceRewrite.getOldTask())) {
@@ -942,7 +953,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
 
           storage.write(new NoResult.Quiet() {
             @Override
-            protected void execute(MutableStoreProvider storeProvider) {
+            public void execute(MutableStoreProvider storeProvider) {
               stateManager.insertPendingTasks(
                   storeProvider,
                   task,
@@ -1111,6 +1122,11 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
 
     if (settings.getMaxFailedInstances() < 0) {
       return invalidRequest(INVALID_MAX_FAILED_INSTANCES);
+    }
+
+    if (settings.getMaxPerInstanceFailures() * mutableRequest.getInstanceCount()
+            > MAX_UPDATE_INSTANCE_FAILURES.get()) {
+      return invalidRequest(TOO_MANY_POTENTIAL_FAILED_INSTANCES);
     }
 
     if (settings.getMinWaitInInstanceRunningMs() < 0) {
@@ -1376,8 +1392,12 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
   static final String INVALID_MAX_FAILED_INSTANCES = "maxFailedInstances must be non-negative.";
 
   @VisibleForTesting
-  static final String INVALID_MAX_INSTANCE_FAILURES =
-      "maxPerInstanceFailures must be non-negative.";
+  static final String TOO_MANY_POTENTIAL_FAILED_INSTANCES = "Your update allows too many failures "
+      + "to occur, consider decreasing the per-instance failures or maxFailedInstances.";
+
+  @VisibleForTesting
+  static final String INVALID_MAX_INSTANCE_FAILURES
+      = "maxPerInstanceFailures must be non-negative.";
 
   @VisibleForTesting
   static final String INVALID_MIN_WAIT_TO_RUNNING =

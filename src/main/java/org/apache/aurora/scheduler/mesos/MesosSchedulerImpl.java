@@ -33,12 +33,12 @@ import com.twitter.common.inject.TimedInterceptor.Timed;
 import org.apache.aurora.GuiceUtils.AllowUnchecked;
 import org.apache.aurora.scheduler.HostOffer;
 import org.apache.aurora.scheduler.TaskStatusHandler;
-import org.apache.aurora.scheduler.async.OfferManager;
 import org.apache.aurora.scheduler.base.SchedulerException;
 import org.apache.aurora.scheduler.events.EventSink;
 import org.apache.aurora.scheduler.events.PubsubEvent.DriverDisconnected;
 import org.apache.aurora.scheduler.events.PubsubEvent.DriverRegistered;
 import org.apache.aurora.scheduler.events.PubsubEvent.TaskStatusReceived;
+import org.apache.aurora.scheduler.offers.OfferManager;
 import org.apache.aurora.scheduler.stats.CachedCounters;
 import org.apache.aurora.scheduler.storage.AttributeStore;
 import org.apache.aurora.scheduler.storage.Storage;
@@ -132,7 +132,7 @@ public class MesosSchedulerImpl implements Scheduler {
 
     storage.write(new MutateWork.NoResult.Quiet() {
       @Override
-      protected void execute(MutableStoreProvider storeProvider) {
+      public void execute(MutableStoreProvider storeProvider) {
         storeProvider.getSchedulerStore().saveFrameworkId(frameworkId.getValue());
       }
     });
@@ -165,7 +165,7 @@ public class MesosSchedulerImpl implements Scheduler {
         //                offers when the host attributes cannot be found. (AURORA-137)
         storage.write(new MutateWork.NoResult.Quiet() {
           @Override
-          protected void execute(MutableStoreProvider storeProvider) {
+          public void execute(MutableStoreProvider storeProvider) {
             for (Offer offer : offers) {
               IHostAttributes attributes =
                   AttributeStore.Util.mergeOffer(storeProvider.getAttributeStore(), offer);

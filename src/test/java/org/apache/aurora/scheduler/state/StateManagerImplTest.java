@@ -36,7 +36,6 @@ import org.apache.aurora.gen.ScheduleStatus;
 import org.apache.aurora.gen.ScheduledTask;
 import org.apache.aurora.gen.TaskEvent;
 import org.apache.aurora.scheduler.TaskIdGenerator;
-import org.apache.aurora.scheduler.async.RescheduleCalculator;
 import org.apache.aurora.scheduler.base.Query;
 import org.apache.aurora.scheduler.base.TaskTestUtil;
 import org.apache.aurora.scheduler.base.Tasks;
@@ -45,6 +44,7 @@ import org.apache.aurora.scheduler.events.PubsubEvent;
 import org.apache.aurora.scheduler.events.PubsubEvent.TaskStateChange;
 import org.apache.aurora.scheduler.events.PubsubEvent.TasksDeleted;
 import org.apache.aurora.scheduler.mesos.Driver;
+import org.apache.aurora.scheduler.scheduling.RescheduleCalculator;
 import org.apache.aurora.scheduler.storage.AttributeStore;
 import org.apache.aurora.scheduler.storage.Storage;
 import org.apache.aurora.scheduler.storage.db.DbUtil;
@@ -114,7 +114,7 @@ public class StateManagerImplTest extends EasyMockTest {
         rescheduleCalculator);
     storage.write(new Storage.MutateWork.NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         AttributeStore.Mutable attributeStore = storeProvider.getAttributeStore();
         attributeStore.saveHostAttributes(HOST_A);
       }
@@ -408,7 +408,7 @@ public class StateManagerImplTest extends EasyMockTest {
     changeState(taskId, FINISHED);
     storage.write(new Storage.MutateWork.NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         stateManager.deleteTasks(storeProvider, ImmutableSet.of(taskId));
       }
     });
@@ -474,7 +474,7 @@ public class StateManagerImplTest extends EasyMockTest {
     control.replay();
     storage.write(new Storage.MutateWork.NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         stateManager.insertPendingTasks(
             storeProvider,
             NON_SERVICE_CONFIG,
@@ -545,7 +545,7 @@ public class StateManagerImplTest extends EasyMockTest {
   private void insertTask(final ITaskConfig task, final int instanceId) {
     storage.write(new Storage.MutateWork.NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         stateManager.insertPendingTasks(storeProvider, task, ImmutableSet.of(instanceId));
       }
     });
@@ -589,7 +589,7 @@ public class StateManagerImplTest extends EasyMockTest {
 
     storage.write(new Storage.MutateWork.NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         stateManager.assignTask(
             storeProvider,
             taskId,

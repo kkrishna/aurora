@@ -77,9 +77,9 @@ interface TemporaryStorage {
         public void deleteTasks(final Query.Builder query) {
           storage.write(new MutateWork.NoResult.Quiet() {
             @Override
-            protected void execute(MutableStoreProvider storeProvider) {
+            public void execute(MutableStoreProvider storeProvider) {
               Set<String> ids = FluentIterable.from(storeProvider.getTaskStore().fetchTasks(query))
-                  .transform(Tasks.SCHEDULED_TO_ID)
+                  .transform(Tasks::id)
                   .toSet();
               storeProvider.getUnsafeTaskStore().deleteTasks(ids);
             }

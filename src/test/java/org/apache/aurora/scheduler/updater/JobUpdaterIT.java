@@ -58,8 +58,6 @@ import org.apache.aurora.gen.ScheduledTask;
 import org.apache.aurora.gen.TaskConfig;
 import org.apache.aurora.scheduler.TaskIdGenerator;
 import org.apache.aurora.scheduler.TaskIdGenerator.TaskIdGeneratorImpl;
-import org.apache.aurora.scheduler.async.RescheduleCalculator;
-import org.apache.aurora.scheduler.async.RescheduleCalculator.RescheduleCalculatorImpl;
 import org.apache.aurora.scheduler.base.JobKeys;
 import org.apache.aurora.scheduler.base.Query;
 import org.apache.aurora.scheduler.base.TaskTestUtil;
@@ -67,6 +65,8 @@ import org.apache.aurora.scheduler.base.Tasks;
 import org.apache.aurora.scheduler.events.EventSink;
 import org.apache.aurora.scheduler.events.PubsubEvent;
 import org.apache.aurora.scheduler.mesos.Driver;
+import org.apache.aurora.scheduler.scheduling.RescheduleCalculator;
+import org.apache.aurora.scheduler.scheduling.RescheduleCalculator.RescheduleCalculatorImpl;
 import org.apache.aurora.scheduler.state.LockManager;
 import org.apache.aurora.scheduler.state.LockManagerImpl;
 import org.apache.aurora.scheduler.state.StateChangeResult;
@@ -241,7 +241,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
       storage.write(new NoResult.Quiet() {
         @Override
-        protected void execute(Storage.MutableStoreProvider storeProvider) {
+        public void execute(Storage.MutableStoreProvider storeProvider) {
           assertEquals(StateChangeResult.SUCCESS, stateManager.changeState(
               storeProvider,
               getTaskId(job, instanceId),
@@ -305,7 +305,7 @@ public class JobUpdaterIT extends EasyMockTest {
   private void insertPendingTasks(final ITaskConfig task, final Set<Integer> instanceIds) {
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         stateManager.insertPendingTasks(storeProvider, task, instanceIds);
       }
     });
@@ -314,7 +314,7 @@ public class JobUpdaterIT extends EasyMockTest {
   private void insertInitialTasks(final IJobUpdate update) {
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         for (IInstanceTaskConfig config : update.getInstructions().getInitialState()) {
           insertPendingTasks(config.getTask(), expandInstanceIds(ImmutableSet.of(config)));
         }
@@ -327,10 +327,10 @@ public class JobUpdaterIT extends EasyMockTest {
         Storage.Util.fetchTasks(storage, Query.jobScoped(job).active());
 
     Map<Integer, IScheduledTask> tasksByInstance =
-        Maps.uniqueIndex(tasks, Tasks.SCHEDULED_TO_INSTANCE_ID);
+        Maps.uniqueIndex(tasks, Tasks::getInstanceId);
     assertEquals(
         expected,
-        ImmutableMap.copyOf(Maps.transformValues(tasksByInstance, Tasks.SCHEDULED_TO_INFO)));
+        ImmutableMap.copyOf(Maps.transformValues(tasksByInstance, Tasks::getConfig)));
   }
 
   @Test
@@ -462,7 +462,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         saveJobUpdate(storeProvider.getJobUpdateStore(), update, ROLLING_FORWARD);
       }
     });
@@ -506,7 +506,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         saveJobUpdate(storeProvider.getJobUpdateStore(), update, ROLL_FORWARD_AWAITING_PULSE);
       }
     });
@@ -541,7 +541,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         saveJobUpdate(storeProvider.getJobUpdateStore(), update, ROLL_FORWARD_PAUSED);
       }
     });
@@ -680,7 +680,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         saveJobUpdate(storeProvider.getJobUpdateStore(), update, ROLLING_FORWARD);
       }
     });
@@ -693,7 +693,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         storeProvider.getJobUpdateStore().deleteAllUpdatesAndEvents();
         releaseAllLocks();
       }
@@ -1055,7 +1055,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         JobUpdateStore.Mutable store = storeProvider.getJobUpdateStore();
         store.deleteAllUpdatesAndEvents();
 
@@ -1120,7 +1120,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         saveJobUpdate(storeProvider.getJobUpdateStore(), update, ROLLING_FORWARD);
       }
     });
@@ -1151,7 +1151,7 @@ public class JobUpdaterIT extends EasyMockTest {
 
     storage.write(new NoResult.Quiet() {
       @Override
-      protected void execute(Storage.MutableStoreProvider storeProvider) {
+      public void execute(Storage.MutableStoreProvider storeProvider) {
         ILock lock = saveJobUpdate(storeProvider.getJobUpdateStore(), update, ROLLING_FORWARD);
         lockManager.releaseLock(lock);
       }
