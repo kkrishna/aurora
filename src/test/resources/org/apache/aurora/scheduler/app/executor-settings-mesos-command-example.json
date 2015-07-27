@@ -1,0 +1,18 @@
+[
+  {
+    "name": "mesos-command",
+    "resources": [
+      "/path/to/resource"
+    ],
+    "executorFlags": "",
+    "globalContainerMounts": [
+      "/host:/container1:ro"
+    ],
+    "overhead": {
+      "numCpus": 1.25,
+      "ramMB": 128,
+      "diskMB": 0,
+      "numPorts": 0
+    }
+  }
+]

@@ -16,20 +16,39 @@ package org.apache.aurora.scheduler.app;
 import java.util.Map;
 
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 
 public class ExecutorSettingsLoaderTest {
-  private static final String EXAMPLE_RESOURCE = "executor-settings-example.json";
+  private static final String CUSTOM_EXEC_EXAMPLE_RESOURCE = "executor-settings-example.json";
+  private static final String MESOS_COMMAND_EXAMPLE_RESOURCE
+      = "executor-settings-mesos-command-example.json";
+  private static final String THERMOS_NO_OBSERVER_RESOURCE
+      = "executor-settings-thermos-no-observer.json";
   private static final String NONEXISTENT_RESOURCE = "executor-settings-nonexistent.json";
 
   @Test
   public void parse() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
     Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
-        getClass().getResource(EXAMPLE_RESOURCE).getFile());
+        getClass().getResource(CUSTOM_EXEC_EXAMPLE_RESOURCE).getFile());
 
     assertFalse(test.isEmpty());
+  }
+
+  @Test
+  public void parseMesosCommand() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+    Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
+        getClass().getResource(MESOS_COMMAND_EXAMPLE_RESOURCE).getFile());
+
+    assertFalse(test.isEmpty());
+  }
+
+  @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)
+  public void testThermosNoObserver()
+      throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+    ExecutorSettingsLoader.load(THERMOS_NO_OBSERVER_RESOURCE);
   }
 
   @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)

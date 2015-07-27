@@ -13,85 +13,94 @@
  */
 package org.apache.aurora.scheduler.app;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 
+import com.twitter.common.quantity.Amount;
+import com.twitter.common.quantity.Data;
+
+import org.apache.aurora.gen.Volume;
+import org.apache.aurora.scheduler.configuration.Resources;
+import org.apache.aurora.scheduler.mesos.ExecutorSettings;
+
 /**
- * Class to make serializing and deserializing executor configuration easier.
+ * Class to make serializing and de-serializing executor configuration easier.
  */
 public class ExecutorConfiguration {
+  private static final Logger LOG = Logger.getLogger(ExecutorConfiguration.class.getName());
 
   private String name;
   private String path;
-  private String arguments;
   private Set<String> resources;
   private String thermosObserverRoot;
   private String executorFlags;
   private Set<String> globalContainerMounts;
-  private ExecutorOverhead overhead = new ExecutorOverhead();
+  private ExecutorOverhead overhead;
   private JsonObject customSchema;
+
+  /**
+   * Inner class to encapsulate Overhead into a JSON object.
+   */
+  private static final class ExecutorOverhead {
+    private double numCpus;
+    private long ramMB;
+    private long diskMB;
+    private int numPorts;
+  }
 
   public String getName() {
     return name;
   }
 
-  public String getPath() {
-    return path;
-  }
-  public String getArguments() {
-    return arguments;
-  }
-
-  public Set<String> getResources() {
-    return resources;
-  }
-
-  public String getThermosObserverRoot() {
-    return thermosObserverRoot;
-  }
-
-  public String getExecutorFlags() {
-    return executorFlags;
-  }
-
-  public Set<String> getGlobalContainerMounts() {
-    return globalContainerMounts;
-  }
-
-  public ExecutorOverhead getOverhead() {
-    return overhead;
+  public JsonObject getCustomSchema() {
+    return customSchema;
   }
 
   /**
-   * Inner class to leverage GSON object parsing.
+   * Helper method to convert information from config file into a Volume list. Uses
+   * VolumeParser class to verify correctness.
    */
-  final static class ExecutorOverhead {
-    private double numCpus;
-    private long diskMB;
-    private long ramMB;
-    private int numPorts;
+  private static ImmutableList<Volume> globalContainerMountParser(
+      Set<String> globalContainerMounts) {
 
-    private ExecutorOverhead() {
+    List<Volume> globalMountsList = new ArrayList<Volume>();
+    VolumeParser volParser = new VolumeParser();
+
+    for (String mount : globalContainerMounts) {
+      try {
+        globalMountsList.add(volParser.doParse(mount));
+      } catch (IllegalArgumentException e) {
+        LOG.warning("Illegal global container mount setting \"" + mount + "\" is being ignored");
+      }
     }
 
-    public double getNumCpus() {
-      return numCpus;
-    }
-
-    public long getDiskMB() {
-      return diskMB;
-    }
-
-    public long getRamMB() {
-      return ramMB;
-    }
-
-    public int getNumPorts() {
-      return numPorts;
-    }
+    return ImmutableList.<Volume>copyOf(globalMountsList);
   }
 
-  ExecutorConfiguration() {
+  /**
+   * Method to convert ExecutorConfiguration to ExecutorSettings used by Aurora Scheduler.
+   */
+  public ExecutorSettings toExecutorSettings() {
+    return ExecutorSettings.newBuilder()
+        .setExecutorName(this.name)
+        .setExecutorPath(this.path)
+        .setExecutorFlags(Optional.<String>fromNullable(this.executorFlags))
+        .setGlobalContainerMounts(globalContainerMountParser(this.globalContainerMounts))
+        .setExecutorResources(ImmutableList.<String>copyOf(this.resources))
+        .setThermosObserverRoot(this.thermosObserverRoot)
+        .setExecutorOverhead(
+            new Resources(overhead.numCpus,
+                Amount.of(overhead.ramMB, Data.MB),
+                Amount.of(overhead.diskMB, Data.MB),
+                overhead.numPorts)
+        )
+        .build();
   }
+
 }

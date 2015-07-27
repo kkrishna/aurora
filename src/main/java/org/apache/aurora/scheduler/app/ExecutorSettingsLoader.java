@@ -23,31 +23,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 
 import com.google.gson.reflect.TypeToken;
-import com.twitter.common.quantity.Amount;
-import com.twitter.common.quantity.Data;
 
-import org.apache.aurora.gen.Volume;
-import org.apache.aurora.scheduler.configuration.Resources;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Executor configuration file loader.
  */
 public final class ExecutorSettingsLoader {
-  private static final Logger LOG = Logger.getLogger(ExecutorSettingsLoader.class.getName());
   /**
    * No instances of this class should exist.
    */
@@ -65,37 +54,6 @@ public final class ExecutorSettingsLoader {
   }
 
   /**
-   * Helper method to convert information from config file into a Resource object.
-   */
-  private static Resources parseOverhead(ExecutorConfiguration.ExecutorOverhead overhead) {
-
-    return new Resources(overhead.getNumCpus(),
-        Amount.of(overhead.getRamMB(), Data.MB),
-        Amount.of(overhead.getDiskMB(), Data.MB),
-        overhead.getNumPorts());
-  }
-
-  /**
-   * Helper method to convert information from config file into a Volume list.
-   */
-  private static ImmutableList<Volume> globalContainerMountParser(
-      Set<String> globalContainerMounts) {
-
-    List<Volume> globalMountsList = new ArrayList<Volume>();
-    VolumeParser volParser = new VolumeParser();
-
-    for (String mount : globalContainerMounts) {
-      try {
-        globalMountsList.add(volParser.doParse(mount));
-      } catch (IllegalArgumentException e) {
-        LOG.warning("Illegal global container mount setting \"" + mount + "\" is being ignored");
-      }
-    }
-
-    return ImmutableList.<Volume>copyOf(globalMountsList);
-  }
-
-  /**
    * Executor settings map loader to be called whenever Map needs to be generated from
    * the JSON config file.
    */
@@ -109,25 +67,9 @@ public final class ExecutorSettingsLoader {
       Type type = new TypeToken<ArrayList<ExecutorConfiguration>>() { } .getType();
       List<ExecutorConfiguration> lst = gson.fromJson(fileReader, type);
 
-      for (ExecutorConfiguration executorConfig : lst) {
-        //TODO: Remove check when observer is axed
-        if ("thermos".equals(executorConfig.getName())) {
-          requireNonNull(executorConfig.getThermosObserverRoot());
-        }
-
-        executorSettings.put(executorConfig.getName(),
-            ExecutorSettings.newBuilder()
-                .setExecutorName(executorConfig.getName())
-                .setExecutorPath(executorConfig.getPath())
-                .setExecutorFlags(Optional.<String>fromNullable(executorConfig.getExecutorFlags()))
-                .setGlobalContainerMounts(
-                    globalContainerMountParser(executorConfig.getGlobalContainerMounts()))
-                .setExecutorResources(ImmutableList.<String>copyOf(executorConfig.getResources()))
-                .setThermosObserverRoot(executorConfig.getThermosObserverRoot())
-                .setExecutorOverhead(parseOverhead(executorConfig.getOverhead()))
-                .build());
+      for (ExecutorConfiguration config : lst) {
+        executorSettings.put(config.getName(), config.toExecutorSettings());
       }
-
     } catch (FileNotFoundException e) {
       throw new ExecutorSettingsConfigException("Config file could not be found", e);
     } catch (UnsupportedEncodingException e) {

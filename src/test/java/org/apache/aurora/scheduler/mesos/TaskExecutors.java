@@ -13,9 +13,15 @@
  */
 package org.apache.aurora.scheduler.mesos;
 
+import java.util.Arrays;
+
+import com.google.common.base.Optional;
+
 import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
 
+import org.apache.aurora.gen.Volume;
+import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.configuration.Resources;
 
 /**
@@ -43,5 +49,16 @@ public final class TaskExecutors {
           .setThermosObserverRoot("/var/run/thermos")
           .setExecutorOverhead(
               new Resources(0.01, Amount.of(256L, Data.MB), Amount.of(0L, Data.MB), 0))
+          .build();
+
+  public static final ExecutorSettings FAKE_MESOS_COMMAND_EXECUTOR =
+      ExecutorSettings.newBuilder()
+          .setExecutorName("mesos-command")
+          .setExecutorResources(Arrays.<String>asList("/path/to/resource"))
+          .setExecutorFlags(Optional.<String>fromNullable(""))
+          .setGlobalContainerMounts(
+              Arrays.<Volume>asList(new VolumeParser().doParse("/host:/container1:ro")))
+          .setExecutorOverhead(
+              new Resources(1.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
           .build();
 }

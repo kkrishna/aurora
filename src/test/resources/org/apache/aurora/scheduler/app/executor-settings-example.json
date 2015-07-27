@@ -1,8 +1,7 @@
 [
   {
     "name": "executor1",
-    "path": "/example/path/to/example_executor.pex",
-    "arguments": "",
+    "path": "/example/path/to/example_executor1.pex",
     "resources": [
     ],
     "thermosObserverRoot":"/var/run/example",
@@ -11,14 +10,14 @@
     ],
     "overhead": {
       "numCpus": 0.25,
-      "diskMB": 0,
       "ramMB": 128,
+      "diskMB": 0,
       "numPorts": 0
     }
   },
   {
     "name": "executor2",
-    "arguments": "",
+    "path": "/example/path/to/example_executor2.pex",
     "resources": [
       "/path/to/resource"
     ],
@@ -28,13 +27,20 @@
     ],
     "overhead": {
       "numCpus": 1.25,
-      "diskMB": 0,
       "ramMB": 128,
+      "diskMB": 0,
       "numPorts": 0
-    }
+    },
+  "customSchema": {
+  "test": [
+    "foo",
+    "bar"
+  ]
+}
   },
   {
     "name": "executor3",
+    "path": "/example/path/to/example_executor3.pex",
     "arguments": "",
     "resources": [
       "/path/to/resource",
@@ -47,9 +53,13 @@
     ],
     "overhead": {
       "numCpus": 1000,
-      "diskMB": 0,
       "ramMB": 256,
+      "diskMB": 0,
       "numPorts": 100
+    },
+    "customSchema":
+    {
+      "test":"test"
     }
   }
 ]

@@ -14,6 +14,7 @@
 package org.apache.aurora.scheduler.mesos;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -34,6 +35,7 @@ public final class ExecutorSettings {
   private final Optional<String> executorFlags;
   private final Resources executorOverhead;
   private final List<Volume> globalContainerMounts;
+  //private final JsonObject dataBlob;
 
   ExecutorSettings(
       String executorName,
@@ -44,13 +46,28 @@ public final class ExecutorSettings {
       Resources executorOverhead,
       List<Volume> globalContainerMounts) {
 
+    //TODO: Remove check when observer is axed
+    if ("thermos".equals(executorName)) {
+      requireNonNull(thermosObserverRoot);
+    }
+
+    /**
+     * Path is ignored for Mesos-Command, set it to an empty string to avoid breakage
+     *  for now in case its not in the config file
+     */
+    if ("mesos-command".equals(executorName)) {
+      this.executorPath = "";
+    } else {
+      this.executorPath = requireNonNull(executorPath);
+    }
+
     this.executorName = requireNonNull(executorName);
-    this.executorPath = executorPath;
     this.executorResources = requireNonNull(executorResources);
     this.thermosObserverRoot = thermosObserverRoot;
     this.executorFlags = executorFlags;
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
+
   }
 
   public String getExecutorName() {
@@ -83,6 +100,38 @@ public final class ExecutorSettings {
 
   public static Builder newBuilder() {
     return new Builder();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        executorName,
+        executorPath,
+        executorResources,
+        thermosObserverRoot,
+        executorPath,
+        executorOverhead,
+        globalContainerMounts);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+
+    final ExecutorSettings that = (ExecutorSettings) obj;
+
+    return Objects.equals(this.executorName, that.executorName)
+        && Objects.equals(this.executorPath, that.executorPath)
+        && Objects.equals(this.executorResources, that.executorResources)
+        && Objects.equals(this.thermosObserverRoot, that.thermosObserverRoot)
+        && Objects.equals(this.executorOverhead, that.executorOverhead)
+        && Objects.equals(this.globalContainerMounts, that.globalContainerMounts);
   }
 
   public static final class Builder {
