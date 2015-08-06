@@ -20,6 +20,8 @@ from twitter.common.log.formatters.plain import PlainFormatter
 
 from apache.aurora.client.cli import CommandLine, ConfigurationPlugin
 from apache.aurora.client.cli.options import CommandOption
+from apache.aurora.client.api import AuroraClientAPI
+from apache.aurora.common.cluster import Cluster
 from apache.aurora.common.auth.auth_module_manager import register_auth_module
 
 
@@ -111,11 +113,13 @@ class AuroraCommandLine(CommandLine):
 
 
 def proxy_main():
-  client = AuroraCommandLine()
-  # Defaulting to '-h' results in a similar, but more inviting message than 'too few arguments'.
-  if len(sys.argv) == 1:
-    sys.argv.append('-h')
-  sys.exit(client.execute(sys.argv[1:]))
+  cluster = Cluster(name="example", zk="localhost", zk_port=2181, scheduler_zk_path="/aurora/scheduler")
+
+  try:
+    client = AuroraClientAPI(cluster=cluster, user_agent="test")
+    print(client.get_locks())
+  except TypeError:
+    print('Type error')
 
 if __name__ == '__main__':
   proxy_main()
