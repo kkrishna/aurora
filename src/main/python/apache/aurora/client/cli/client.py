@@ -23,7 +23,25 @@ from apache.aurora.client.cli.options import CommandOption
 from apache.aurora.client.api import AuroraClientAPI
 from apache.aurora.common.cluster import Cluster
 from apache.aurora.common.auth.auth_module_manager import register_auth_module
+from apache.aurora.common.aurora_job_key import AuroraJobKey
 
+from gen.apache.aurora.api.ttypes import (
+  Constraint,
+  Container,
+  CronCollisionPolicy,
+  DockerContainer,
+  DockerParameter,
+  ExecutorConfig,
+  Identity,
+  JobConfiguration,
+  JobKey,
+  LimitConstraint,
+  MesosContainer,
+  Metadata,
+  TaskConfig,
+  TaskConstraint,
+  ValueConstraint
+)
 
 class AuroraLogConfigurationPlugin(ConfigurationPlugin):
   """Plugin for configuring log level settings for the aurora client."""
@@ -113,11 +131,72 @@ class AuroraCommandLine(CommandLine):
 
 
 def proxy_main():
-  cluster = Cluster(name="example", zk="localhost", zk_port=2181, scheduler_zk_path="/aurora/scheduler")
+
+  clusterName = "devcluster"
+  role = "www-data"
+  environment = "devel"
+  jobName = "hello_world"
+  user = "rdelvalle"
+  isProduction = False
+  isService = False
+  maxTaskFailures = 4
+  priority = 0
+  email = "rdelvalle@paypal.com"
+
+  numCpus = 1
+  ramMb = 4
+  diskMb = 8
+
+  executorName = "mesos-command"
+  executorData = "ping paypal.com"
+
+
+  owner = Identity(role=role, user=user)
+
+  key = JobKey(
+    role=role,
+    environment=environment,
+    name=jobName)
+
+  MB = 1024 * 1024
+  task = TaskConfig()
+
+  task.jobName = jobName
+  task.environment = environment
+  task.production = isProduction
+  task.isService = isService
+  task.maxTaskFailures = maxTaskFailures
+  task.priority = priority
+  task.contactEmail = email
+
+  task.numCpus = numCpus
+  task.ramMb = ramMb
+  task.diskMb = diskMb
+
+  task.job = key
+  task.owner = owner
+  task.requestedPorts = {}
+  task.taskLinks = {}  # See AURORA-739
+  task.constraints = {}
+  #task.container = "mesos" = {}
+
+  task.executorConfig = ExecutorConfig(name=executorName,data=executorData)
+
+  config = JobConfiguration(
+    key=key,
+    owner=owner,
+    cronSchedule= None,
+    cronCollisionPolicy=0,
+    taskConfig=task,
+    instanceCount=1)
+
+  cluster = Cluster(name=clusterName, zk="localhost", zk_port=2181, scheduler_zk_path="/aurora/scheduler", auth_mechanism="BASIC")
 
   try:
     client = AuroraClientAPI(cluster=cluster, user_agent="test")
-    print(client.get_locks())
+    result =client.scheduler_proxy().createJob(config, None)
+
+    print(result)
   except TypeError:
     print('Type error')
 
