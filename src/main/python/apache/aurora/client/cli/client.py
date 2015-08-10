@@ -13,6 +13,7 @@
 #
 from __future__ import print_function
 
+import argparse
 import logging
 import sys
 
@@ -40,6 +41,7 @@ from gen.apache.aurora.api.ttypes import (
   Metadata,
   TaskConfig,
   TaskConstraint,
+  TaskQuery,
   ValueConstraint
 )
 
@@ -130,12 +132,25 @@ class AuroraCommandLine(CommandLine):
     self.register_noun(Update())
 
 
+def parser():
+  parser = argparse.ArgumentParser(description='Create custom thrift API calls for Apache Aurora')
+  parser.add_argument('action', metavar='action', help='create or kill')
+  parser.add_argument('jobName', metavar='job', help='job name')
+  parser.add_argument('executorName', metavar='executor', help='name of the executor')
+  parser.add_argument('data', metavar='data', help='data to be passed on to executor')
+
+  args = parser.parse_args()
+
+  return vars(args)
+
 def proxy_main():
+
+  parsedArgs = parser()
 
   clusterName = "devcluster"
   role = "www-data"
   environment = "devel"
-  jobName = "hello_world"
+  jobName = parsedArgs['jobName']
   user = "rdelvalle"
   isProduction = False
   isService = False
@@ -147,8 +162,8 @@ def proxy_main():
   ramMb = 4
   diskMb = 8
 
-  executorName = "mesos-command"
-  executorData = "ping paypal.com"
+  executorName = parsedArgs['executorName']
+  executorData = parsedArgs['data']
 
 
   owner = Identity(role=role, user=user)
@@ -190,11 +205,21 @@ def proxy_main():
     taskConfig=task,
     instanceCount=1)
 
+  taskQuery = TaskQuery()
+  taskQuery.role = role
+  taskQuery.environment = environment
+  taskQuery.jobName = jobName
+
+
   cluster = Cluster(name=clusterName, zk="localhost", zk_port=2181, scheduler_zk_path="/aurora/scheduler", auth_mechanism="BASIC")
 
   try:
     client = AuroraClientAPI(cluster=cluster, user_agent="test")
-    result =client.scheduler_proxy().createJob(config, None)
+
+    if 'kill' == parsedArgs['action']:
+      result = client.scheduler_proxy().killTasks(taskQuery, None)
+    else:
+      result = client.scheduler_proxy().createJob(config, None)
 
     print(result)
   except TypeError:
