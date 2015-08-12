@@ -15,6 +15,7 @@ package org.apache.aurora.scheduler.filter;
 
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -34,6 +35,7 @@ import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 import org.apache.aurora.scheduler.storage.entities.IAttribute;
 import org.apache.aurora.scheduler.storage.entities.IConstraint;
 import org.apache.aurora.scheduler.storage.entities.IHostAttributes;
+import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
 
 import static java.util.Objects.requireNonNull;
 
@@ -133,11 +135,11 @@ public class SchedulingFilterImpl implements SchedulingFilter {
         }
       });
 
-  private final ExecutorSettings executorSettings;
+  private final Map<String, ExecutorSettings> executorSettings;
 
   @Inject
   @VisibleForTesting
-  public SchedulingFilterImpl(ExecutorSettings executorSettings) {
+  public SchedulingFilterImpl(Map<String, ExecutorSettings> executorSettings) {
     this.executorSettings = requireNonNull(executorSettings);
   }
 
@@ -198,9 +200,10 @@ public class SchedulingFilterImpl implements SchedulingFilter {
       return constraintVeto.asSet();
     }
 
+   ITaskConfig task = request.getTask();
     // 4. Resource check (lowest score).
     return getResourceVetoes(
         resource.getResourceSlot(),
-        ResourceSlot.from(request.getTask(), executorSettings));
+        ResourceSlot.from(task, executorSettings.get(task.getExecutorConfig().getName())));
   }
 }

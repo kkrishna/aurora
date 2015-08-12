@@ -21,16 +21,20 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 
 import com.google.gson.reflect.TypeToken;
 
+import org.apache.aurora.gen.ExecutorConfig;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
 /**
@@ -57,19 +61,24 @@ public final class ExecutorSettingsLoader {
    * Executor settings map loader to be called whenever Map needs to be generated from
    * the JSON config file.
    */
-  public static ImmutableMap<String, ExecutorSettings> load(String configFilePath)
+  public static ImmutableSet<ExecutorSettings> load(String configFilePath)
       throws ExecutorSettingsConfigException {
 
     Map<String, ExecutorSettings> executorSettings = new HashMap<String, ExecutorSettings>();
+    Set<ExecutorSettings> executors = new HashSet<ExecutorSettings>();
+
     try {
       Reader fileReader = new InputStreamReader(new FileInputStream(configFilePath), "UTF8");
       Gson gson = new GsonBuilder().setPrettyPrinting().create();
       Type type = new TypeToken<ArrayList<ExecutorConfiguration>>() { } .getType();
-      List<ExecutorConfiguration> lst = gson.fromJson(fileReader, type);
+      List<ExecutorConfiguration> executorConfigs = gson.fromJson(fileReader, type);
 
-      for (ExecutorConfiguration config : lst) {
-        executorSettings.put(config.getName(), config.toExecutorSettings());
+      for(ExecutorConfiguration config: executorConfigs) {
+        executors.add(config.toExecutorSettings());
       }
+
+
+
     } catch (FileNotFoundException e) {
       throw new ExecutorSettingsConfigException("Config file could not be found", e);
     } catch (UnsupportedEncodingException e) {
@@ -80,6 +89,6 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorSettingsConfigException("A required parameter is missing", e);
     }
 
-    return ImmutableMap.<String, ExecutorSettings>copyOf(executorSettings);
+    return ImmutableSet.<ExecutorSettings>copyOf(executors);
   }
 }

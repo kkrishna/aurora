@@ -29,6 +29,7 @@ public final class PreemptionVictim {
   private final int priority;
   private final Resources resources;
   private final String taskId;
+  private final String executorName;
 
   private PreemptionVictim(
       String slaveHost,
@@ -36,7 +37,8 @@ public final class PreemptionVictim {
       String role,
       int priority,
       Resources resources,
-      String taskId) {
+      String taskId,
+      String executorName) {
 
     this.slaveHost = slaveHost;
     this.production = production;
@@ -44,6 +46,7 @@ public final class PreemptionVictim {
     this.priority = priority;
     this.resources = resources;
     this.taskId = taskId;
+    this.executorName = executorName;
   }
 
   public static PreemptionVictim fromTask(IAssignedTask task) {
@@ -54,7 +57,8 @@ public final class PreemptionVictim {
         config.getJob().getRole(),
         config.getPriority(),
         Resources.from(task.getTask()),
-        task.getTaskId());
+        task.getTaskId(),
+        config.getExecutorConfig().getName());
   }
 
   public String getSlaveHost() {
@@ -81,6 +85,10 @@ public final class PreemptionVictim {
     return taskId;
   }
 
+  public String getExecutorName() {
+    return executorName;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof PreemptionVictim)) {
@@ -93,12 +101,13 @@ public final class PreemptionVictim {
         && Objects.equals(getRole(), other.getRole())
         && Objects.equals(getPriority(), other.getPriority())
         && Objects.equals(getResources(), other.getResources())
-        && Objects.equals(getTaskId(), other.getTaskId());
+        && Objects.equals(getTaskId(), other.getTaskId())
+        && Objects.equals(getExecutorName(), other.getExecutorName());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(slaveHost, production, role, priority, resources, taskId);
+    return Objects.hash(slaveHost, production, role, priority, resources, taskId, executorName);
   }
 
   @Override
@@ -110,6 +119,7 @@ public final class PreemptionVictim {
         .add("priority", getPriority())
         .add("resources", getResources())
         .add("taskId", getTaskId())
+        .add("executorName", getExecutorName())
         .toString();
   }
 }

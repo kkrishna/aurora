@@ -1,5 +1,4 @@
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
+/** * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -45,7 +44,7 @@ public final class ResourceSlot {
    * about 170MB (peak usage) of RAM. The RAM requirement has been rounded up to a power of 2.
    */
   @VisibleForTesting
-  public static final Resources MIN_THERMOS_RESOURCES = new Resources(
+  public static final Resources MIN_EXECUTOR_RESOURCES = new Resources(
       0.01,
       Amount.of(256L, Data.MB),
       Amount.of(1L, Data.MB),
@@ -70,7 +69,7 @@ public final class ResourceSlot {
         executorSettings.getExecutorOverhead());
 
     // Upsize tasks smaller than the minimum resources required to run the executor.
-    return new ResourceSlot(maxElements(requiredTaskResources, MIN_THERMOS_RESOURCES));
+    return new ResourceSlot(maxElements(requiredTaskResources, MIN_EXECUTOR_RESOURCES));
   }
 
   /**

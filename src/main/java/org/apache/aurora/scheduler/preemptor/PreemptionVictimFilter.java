@@ -13,6 +13,7 @@
  */
 package org.apache.aurora.scheduler.preemptor;
 
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -75,13 +76,13 @@ public interface PreemptionVictimFilter {
 
   class PreemptionVictimFilterImpl implements PreemptionVictimFilter {
     private final SchedulingFilter schedulingFilter;
-    private final ExecutorSettings executorSettings;
+    private final Map<String, ExecutorSettings> executorSettings;
     private final PreemptorMetrics metrics;
 
     @Inject
     PreemptionVictimFilterImpl(
         SchedulingFilter schedulingFilter,
-        ExecutorSettings executorSettings,
+        Map<String, ExecutorSettings> executorSettings,
         PreemptorMetrics metrics) {
 
       this.schedulingFilter = requireNonNull(schedulingFilter);
@@ -117,7 +118,7 @@ public interface PreemptionVictimFilter {
         new Function<PreemptionVictim, ResourceSlot>() {
           @Override
           public ResourceSlot apply(PreemptionVictim victim) {
-            return ResourceSlot.from(victim, executorSettings);
+            return ResourceSlot.from(victim, executorSettings.get(victim.getExecutorName()));
           }
         };
 

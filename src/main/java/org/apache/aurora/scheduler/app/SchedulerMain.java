@@ -16,6 +16,7 @@ package org.apache.aurora.scheduler.app;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -28,6 +29,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.multibindings.MapBinder;
+
 import com.twitter.common.application.AbstractApplication;
 import com.twitter.common.application.AppLauncher;
 import com.twitter.common.application.Lifecycle;
@@ -162,13 +165,22 @@ public class SchedulerMain extends AbstractApplication {
           @Override
           protected void configure() {
             try {
-              Map<String, ExecutorSettings> executors = ExecutorSettingsLoader
+              Set<ExecutorSettings> executors = ExecutorSettingsLoader
                   .load(EXECUTORS_CONFIG_PATH.get());
 
+
+              for (ExecutorSettings exec : executors) {
+
+                System.out.println(exec.getExecutorName());
+                MapBinder.newMapBinder(binder(), String.class, ExecutorSettings.class)
+                    .addBinding(exec.getExecutorName()).toInstance(exec);
+              }
+              /*
               bind(ExecutorSettings.class).toInstance(
                   Preconditions.checkNotNull(
                       executors.get(EXECUTOR_NAME.get()),
-                          "Executor " + EXECUTOR_NAME.get() + "not found"));
+                      "Executor " + EXECUTOR_NAME.get() + "not found"));
+                      */
 
             } catch (ExecutorSettingsLoader.ExecutorSettingsConfigException e) {
               LOG.severe("Executors setting configuration error: " + e.getMessage());

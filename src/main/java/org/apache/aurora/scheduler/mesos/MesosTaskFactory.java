@@ -14,6 +14,7 @@
 package org.apache.aurora.scheduler.mesos;
 
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -71,19 +72,26 @@ public interface MesosTaskFactory {
   // TODO(wfarner): Move this class to its own file to reduce visibility to package private.
   class MesosTaskFactoryImpl implements MesosTaskFactory {
     private static final Logger LOG = Logger.getLogger(MesosTaskFactoryImpl.class.getName());
-    private final String executorPrefix;
+    private String executorPrefix;
 
     /**
      * Name to associate with task executors.
      */
     @VisibleForTesting
-    final String executorName;
+    String executorName;
 
-    private final ExecutorSettings executorSettings;
+
+    private final Map<String, ExecutorSettings> executorSettingsMap;
+    ExecutorSettings executorSettings;
 
     @Inject
-    MesosTaskFactoryImpl(ExecutorSettings executorSettings) {
-      this.executorSettings = requireNonNull(executorSettings);
+    MesosTaskFactoryImpl(Map<String, ExecutorSettings> executorSettingsMap) {
+      this.executorSettingsMap = requireNonNull(executorSettingsMap);
+
+      /**
+       * Default to thermos settings to avoid breakage
+       */
+      executorSettings = executorSettingsMap.get("thermos");
       executorName = executorSettings.getExecutorName();
       executorPrefix = executorName + "-";
     }
@@ -130,6 +138,15 @@ public interface MesosTaskFactory {
         LOG.log(Level.SEVERE, "Unable to serialize task.", e);
         throw new SchedulerException("Internal error.", e);
       }
+
+      // TODO: Figure out fallback mechanism
+      executorSettings = executorSettingsMap.get(
+          task.getTask()
+              .getExecutorConfig()
+              .getName());
+
+      executorName = executorSettings.getExecutorName();
+      executorPrefix = executorName + "-";
 
       ITaskConfig config = task.getTask();
       ResourceSlot resourceSlot =

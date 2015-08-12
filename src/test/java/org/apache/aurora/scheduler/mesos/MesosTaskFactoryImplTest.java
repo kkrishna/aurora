@@ -44,7 +44,7 @@ import org.apache.mesos.Protos.TaskInfo;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.aurora.scheduler.ResourceSlot.MIN_THERMOS_RESOURCES;
+import static org.apache.aurora.scheduler.ResourceSlot.MIN_EXECUTOR_RESOURCES;
 import static org.apache.aurora.scheduler.mesos.TaskExecutors.NO_OVERHEAD_EXECUTOR;
 import static org.apache.aurora.scheduler.mesos.TaskExecutors.SOME_OVERHEAD_EXECUTOR;
 import static org.junit.Assert.assertEquals;
@@ -161,7 +161,7 @@ public class MesosTaskFactoryImplTest {
 
     // Simulate the upsizing needed for the task to meet the minimum thermos requirements.
     TaskConfig dummyTask = TASK.getTask().newBuilder()
-        .setRamMb(ResourceSlot.MIN_THERMOS_RESOURCES.getRam().as(Data.MB));
+        .setRamMb(ResourceSlot.MIN_EXECUTOR_RESOURCES.getRam().as(Data.MB));
     checkTaskResources(ITaskConfig.build(dummyTask), task);
   }
 
@@ -183,7 +183,7 @@ public class MesosTaskFactoryImplTest {
         IAssignedTask.build(builder.setAssignedPorts(ImmutableMap.of()));
 
     assertEquals(
-        MIN_THERMOS_RESOURCES,
+        MIN_EXECUTOR_RESOURCES,
         getTotalTaskResources(taskFactory.createFrom(assignedTask, SLAVE)));
   }
 
