@@ -29,7 +29,7 @@ import org.apache.aurora.gen.Mode;
 import org.apache.aurora.gen.TaskConfig;
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
-import org.apache.aurora.scheduler.configuration.Resources;
+import org.apache.aurora.scheduler.Resources;
 import org.apache.aurora.scheduler.mesos.MesosTaskFactory.MesosTaskFactoryImpl;
 import org.apache.aurora.scheduler.storage.entities.IAssignedTask;
 import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
@@ -189,7 +189,7 @@ public class MesosTaskFactoryImplTest {
 
   private void checkTaskResources(ITaskConfig task, TaskInfo taskInfo) {
     assertEquals(
-        Resources.sum(Resources.from(task), config.getExecutorOverhead()),
+        ResourceSlot.sum(Resources.from(task), config.getExecutorOverhead()),
         getTotalTaskResources(taskInfo));
   }
 
@@ -264,6 +264,6 @@ public class MesosTaskFactoryImplTest {
   private static Resources getTotalTaskResources(TaskInfo task) {
     Resources taskResources = Resources.from(task.getResourcesList());
     Resources executorResources = Resources.from(task.getExecutor().getResourcesList());
-    return Resources.sum(taskResources, executorResources);
+    return ResourceSlot.sum(taskResources, executorResources);
   }
 }

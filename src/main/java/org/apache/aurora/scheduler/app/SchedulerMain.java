@@ -48,6 +48,8 @@ import com.twitter.common.zookeeper.guice.client.ZooKeeperClientModule;
 import com.twitter.common.zookeeper.guice.client.ZooKeeperClientModule.ClientConfig;
 import com.twitter.common.zookeeper.guice.client.flagged.FlaggedClientConfig;
 
+import org.apache.aurora.gen.Volume;
+import org.apache.aurora.scheduler.Resources;
 import org.apache.aurora.scheduler.SchedulerLifecycle;
 import org.apache.aurora.scheduler.cron.quartz.CronModule;
 import org.apache.aurora.scheduler.http.HttpService;
@@ -168,20 +170,10 @@ public class SchedulerMain extends AbstractApplication {
               Set<ExecutorSettings> executors = ExecutorSettingsLoader
                   .load(EXECUTORS_CONFIG_PATH.get());
 
-
               for (ExecutorSettings exec : executors) {
-
-                System.out.println(exec.getExecutorName());
                 MapBinder.newMapBinder(binder(), String.class, ExecutorSettings.class)
                     .addBinding(exec.getExecutorName()).toInstance(exec);
               }
-              /*
-              bind(ExecutorSettings.class).toInstance(
-                  Preconditions.checkNotNull(
-                      executors.get(EXECUTOR_NAME.get()),
-                      "Executor " + EXECUTOR_NAME.get() + "not found"));
-                      */
-
             } catch (ExecutorSettingsLoader.ExecutorSettingsConfigException e) {
               LOG.severe("Executors setting configuration error: " + e.getMessage());
             }

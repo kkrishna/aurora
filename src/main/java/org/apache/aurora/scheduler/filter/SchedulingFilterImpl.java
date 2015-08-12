@@ -24,6 +24,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.inject.Inject;
+
+import com.twitter.common.inject.TimedInterceptor.Timed;
 import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
 
@@ -171,6 +173,7 @@ public class SchedulingFilterImpl implements SchedulingFilter {
         new ConstraintMatcher.NameFilter(DEDICATED_ATTRIBUTE));
   }
 
+  @Timed("scheduling_filter")
   @Override
   public Set<Veto> filter(UnusedResource resource, ResourceRequest request) {
     // Apply veto filtering rules from higher to lower score making sure we cut over and return

@@ -22,7 +22,7 @@ import com.twitter.common.quantity.Data;
 
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.app.VolumeParser;
-import org.apache.aurora.scheduler.configuration.Resources;
+import org.apache.aurora.scheduler.Resources;
 
 /**
  * Utility class to contain constants related to setting up executor settings.
