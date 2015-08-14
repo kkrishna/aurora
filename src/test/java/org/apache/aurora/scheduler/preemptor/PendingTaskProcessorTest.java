@@ -27,6 +27,7 @@ import com.twitter.common.testing.easymock.EasyMockTest;
 import com.twitter.common.util.testing.FakeClock;
 
 import org.apache.aurora.gen.AssignedTask;
+import org.apache.aurora.gen.ExecutorConfig;
 import org.apache.aurora.gen.HostAttributes;
 import org.apache.aurora.gen.JobKey;
 import org.apache.aurora.gen.MaintenanceMode;
@@ -274,6 +275,7 @@ public class PendingTaskProcessorTest extends EasyMockTest {
             .setTask(new TaskConfig()
                 .setPriority(1)
                 .setProduction(true)
+                .setExecutorConfig(new ExecutorConfig("pendingTask", ""))
                 .setJob(key)));
     task.addToTaskEvents(new TaskEvent(0, PENDING));
     return IScheduledTask.build(task);

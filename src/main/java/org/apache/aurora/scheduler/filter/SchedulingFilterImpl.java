@@ -203,10 +203,15 @@ public class SchedulingFilterImpl implements SchedulingFilter {
       return constraintVeto.asSet();
     }
 
-   ITaskConfig task = request.getTask();
+    ITaskConfig task = request.getTask();
     // 4. Resource check (lowest score).
+
+    //TODO(rdelvalle): Get scheduler to throw out task if the executor isn't in the config file
     return getResourceVetoes(
         resource.getResourceSlot(),
-        ResourceSlot.from(task, executorSettings.get(task.getExecutorConfig().getName())));
+        ResourceSlot.from(task,
+            requireNonNull(
+                executorSettings.get(
+                    task.getExecutorConfig().getName()))));
   }
 }

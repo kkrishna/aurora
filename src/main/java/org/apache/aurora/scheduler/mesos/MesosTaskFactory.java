@@ -72,33 +72,26 @@ public interface MesosTaskFactory {
   // TODO(wfarner): Move this class to its own file to reduce visibility to package private.
   class MesosTaskFactoryImpl implements MesosTaskFactory {
     private static final Logger LOG = Logger.getLogger(MesosTaskFactoryImpl.class.getName());
-    private String executorPrefix;
 
     /**
      * Name to associate with task executors.
      */
+    //TODO(rdelvalle): figure out if this is worth keeping
     @VisibleForTesting
-    String executorName;
-
+    String executorName = "";
 
     private final Map<String, ExecutorSettings> executorSettingsMap;
-    ExecutorSettings executorSettings;
+    private ExecutorSettings executorSettings;
 
     @Inject
     MesosTaskFactoryImpl(Map<String, ExecutorSettings> executorSettingsMap) {
       this.executorSettingsMap = requireNonNull(executorSettingsMap);
-
-      /**
-       * Default to thermos settings to avoid breakage
-       */
-      executorSettings = executorSettingsMap.get("thermos");
-      executorName = executorSettings.getExecutorName();
-      executorPrefix = executorName + "-";
     }
 
     @VisibleForTesting
     ExecutorID getExecutorId(String taskId) {
-      return ExecutorID.newBuilder().setValue(executorPrefix + taskId).build();
+      return ExecutorID.newBuilder()
+          .setValue(executorSettings.getExecutorName() + "-" + taskId).build();
     }
 
     private static String getJobSourceName(IJobKey jobkey) {
@@ -139,14 +132,13 @@ public interface MesosTaskFactory {
         throw new SchedulerException("Internal error.", e);
       }
 
-      // TODO: Figure out fallback mechanism
-      executorSettings = executorSettingsMap.get(
-          task.getTask()
-              .getExecutorConfig()
-              .getName());
-
-      executorName = executorSettings.getExecutorName();
-      executorPrefix = executorName + "-";
+      executorName = task.getTask().getExecutorConfig().getName();
+      if (executorSettingsMap.containsKey(executorName)) {
+        // TODO: Figure out fallback mechanism if executor settings doesn't exist
+        executorSettings = executorSettingsMap.get(executorName);
+      } else {
+        throw new SchedulerException("Executor " + executorName + " not in config file.");
+      }
 
       ITaskConfig config = task.getTask();
       ResourceSlot resourceSlot =
@@ -247,7 +239,7 @@ public interface MesosTaskFactory {
       return ExecutorInfo.newBuilder()
           .setCommand(commandInfo)
           .setExecutorId(getExecutorId(task.getTaskId()))
-          .setName(executorName)
+          .setName(executorSettings.getExecutorName())
           .setSource(getInstanceSourceName(config, task.getInstanceId()))
           .addAllResources(RESOURCES_EPSILON.toResourceList());
     }

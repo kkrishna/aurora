@@ -28,6 +28,7 @@ import com.twitter.common.testing.easymock.EasyMockTest;
 import org.apache.aurora.gen.AssignedTask;
 import org.apache.aurora.gen.Attribute;
 import org.apache.aurora.gen.Constraint;
+import org.apache.aurora.gen.ExecutorConfig;
 import org.apache.aurora.gen.HostAttributes;
 import org.apache.aurora.gen.JobKey;
 import org.apache.aurora.gen.MaintenanceMode;
@@ -102,7 +103,7 @@ public class PreemptionVictimFilterTest extends EasyMockTest {
     PreemptionVictimFilter.PreemptionVictimFilterImpl filter =
         new PreemptionVictimFilter.PreemptionVictimFilterImpl(
             schedulingFilter,
-            TaskExecutors.NO_OVERHEAD_EXECUTOR,
+            TaskExecutors.TASK_EXECUTORS,
             preemptorMetrics);
 
     return filter.filterPreemptionVictims(
@@ -230,7 +231,7 @@ public class PreemptionVictimFilterTest extends EasyMockTest {
   // Ensures a production task can preempt 2 tasks on the same host.
   @Test
   public void testProductionPreemptingManyNonProduction() throws Exception {
-    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.NO_OVERHEAD_EXECUTOR);
+    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.TASK_EXECUTORS);
     ScheduledTask a1 = makeTask(USER_A, JOB_A, TASK_ID_A + "_a1");
     a1.getAssignedTask().getTask().setNumCpus(1).setRamMb(512);
 
@@ -252,7 +253,7 @@ public class PreemptionVictimFilterTest extends EasyMockTest {
   // Ensures we select the minimal number of tasks to preempt
   @Test
   public void testMinimalSetPreempted() throws Exception {
-    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.NO_OVERHEAD_EXECUTOR);
+    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.TASK_EXECUTORS);
     ScheduledTask a1 = makeTask(USER_A, JOB_A, TASK_ID_A + "_a1");
     a1.getAssignedTask().getTask().setNumCpus(4).setRamMb(4096);
 
@@ -278,7 +279,7 @@ public class PreemptionVictimFilterTest extends EasyMockTest {
   // Ensures a production task *never* preempts a production task from another job.
   @Test
   public void testProductionJobNeverPreemptsProductionJob() throws Exception {
-    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.NO_OVERHEAD_EXECUTOR);
+    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.TASK_EXECUTORS);
     ScheduledTask p1 = makeProductionTask(USER_A, JOB_A, TASK_ID_A + "_p1");
     p1.getAssignedTask().getTask().setNumCpus(2).setRamMb(1024);
 
@@ -296,7 +297,7 @@ public class PreemptionVictimFilterTest extends EasyMockTest {
   // Ensures that we can preempt if a task + offer can satisfy a pending task.
   @Test
   public void testPreemptWithOfferAndTask() throws Exception {
-    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.NO_OVERHEAD_EXECUTOR);
+    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.TASK_EXECUTORS);
 
     setUpHost();
 
@@ -316,7 +317,7 @@ public class PreemptionVictimFilterTest extends EasyMockTest {
   // Ensures we can preempt if two tasks and an offer can satisfy a pending task.
   @Test
   public void testPreemptWithOfferAndMultipleTasks() throws Exception {
-    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.NO_OVERHEAD_EXECUTOR);
+    schedulingFilter = new SchedulingFilterImpl(TaskExecutors.TASK_EXECUTORS);
 
     setUpHost();
 
@@ -461,7 +462,8 @@ public class PreemptionVictimFilterTest extends EasyMockTest {
             .setProduction(production)
             .setJobName(job)
             .setEnvironment(env)
-            .setConstraints(new HashSet<Constraint>()));
+            .setConstraints(new HashSet<Constraint>())
+            .setExecutorConfig(new ExecutorConfig("no-overhead", "config")));
     return new ScheduledTask().setAssignedTask(assignedTask);
   }
 

@@ -42,6 +42,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.multibindings.MapBinder;
+
 import com.twitter.common.application.Lifecycle;
 import com.twitter.common.application.StartupStage;
 import com.twitter.common.application.modules.AppLauncherModule;
@@ -200,13 +202,15 @@ public class SchedulerIT extends BaseZooKeeperTest {
             Amount.of(1L, Data.MB),
             Amount.of(0L, Data.MB),
             0);
-        bind(ExecutorSettings.class)
-            .toInstance(ExecutorSettings.newBuilder()
-                .setExecutorName("thermos")
-                .setExecutorPath("/executor/thermos")
-                .setThermosObserverRoot("/var/run/thermos")
-                .setExecutorOverhead(executorOverhead)
-                .build());
+        MapBinder.newMapBinder(binder(), String.class, ExecutorSettings.class)
+            .addBinding("thermos")
+            .toInstance(
+                ExecutorSettings
+                    .newBuilder()
+                    .setExecutorName("thermos")
+                    .setExecutorPath("/executor/thermos")
+                    .setThermosObserverRoot("/var/run/thermos")
+                    .setExecutorOverhead(executorOverhead).build());
         install(new BackupModule(backupDir, SnapshotStoreImpl.class));
       }
     };

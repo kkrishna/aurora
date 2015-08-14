@@ -14,15 +14,20 @@
 package org.apache.aurora.scheduler.mesos;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
 
+import org.apache.aurora.gen.Mode;
 import org.apache.aurora.gen.Volume;
-import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.Resources;
+import org.apache.aurora.scheduler.app.VolumeParser;
 
 /**
  * Utility class to contain constants related to setting up executor settings.
@@ -33,6 +38,8 @@ public final class TaskExecutors {
     // Utility class.
   }
 
+  public static final ImmutableMap<String, ExecutorSettings> TASK_EXECUTORS;
+  private static final String EXECUTOR_WRAPPER_PATH = "/fake/executor_wrapper.sh";
   private static final String EXECUTOR_PATH = "/fake/executor.pex";
 
   public static final ExecutorSettings NO_OVERHEAD_EXECUTOR =
@@ -61,4 +68,35 @@ public final class TaskExecutors {
           .setExecutorOverhead(
               new Resources(1.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
           .build();
+
+  public static final ExecutorSettings FAKE_DOCKER_EXECUTOR =
+      ExecutorSettings.newBuilder()
+              .setExecutorName("docker")
+              .setExecutorPath(EXECUTOR_WRAPPER_PATH)
+              .setExecutorResources(ImmutableList.of(SOME_OVERHEAD_EXECUTOR.getExecutorPath()))
+              .setThermosObserverRoot("/var/run/thermos")
+              .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
+              .setGlobalContainerMounts(ImmutableList.of(
+                  new Volume("/container", "/host", Mode.RO)))
+              .build();
+
+  public static final ExecutorSettings WRAPPER_TEST_EXECUTOR =
+      ExecutorSettings.newBuilder()
+        .setExecutorName("wrapper-test")
+        .setExecutorPath(EXECUTOR_WRAPPER_PATH)
+        .setExecutorResources(ImmutableList.of(NO_OVERHEAD_EXECUTOR.getExecutorPath()))
+        .setThermosObserverRoot("/var/run/thermos")
+        .setExecutorOverhead(NO_OVERHEAD_EXECUTOR.getExecutorOverhead())
+        .build();
+
+  static {
+    Map<String, ExecutorSettings> temp = new HashMap<String, ExecutorSettings>();
+    temp.put(NO_OVERHEAD_EXECUTOR.getExecutorName(), NO_OVERHEAD_EXECUTOR);
+    temp.put(SOME_OVERHEAD_EXECUTOR.getExecutorName(), SOME_OVERHEAD_EXECUTOR);
+    temp.put(FAKE_MESOS_COMMAND_EXECUTOR.getExecutorName(), FAKE_MESOS_COMMAND_EXECUTOR);
+    temp.put(FAKE_DOCKER_EXECUTOR.getExecutorName(), FAKE_DOCKER_EXECUTOR);
+    temp.put(WRAPPER_TEST_EXECUTOR.getExecutorName(), WRAPPER_TEST_EXECUTOR);
+
+    TASK_EXECUTORS = ImmutableMap.<String, ExecutorSettings>copyOf(temp);
+  }
 }

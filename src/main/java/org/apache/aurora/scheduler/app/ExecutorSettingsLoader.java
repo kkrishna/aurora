@@ -20,13 +20,10 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,7 +31,6 @@ import com.google.gson.JsonParseException;
 
 import com.google.gson.reflect.TypeToken;
 
-import org.apache.aurora.gen.ExecutorConfig;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
 /**
@@ -64,7 +60,6 @@ public final class ExecutorSettingsLoader {
   public static ImmutableSet<ExecutorSettings> load(String configFilePath)
       throws ExecutorSettingsConfigException {
 
-    Map<String, ExecutorSettings> executorSettings = new HashMap<String, ExecutorSettings>();
     Set<ExecutorSettings> executors = new HashSet<ExecutorSettings>();
 
     try {
@@ -73,12 +68,9 @@ public final class ExecutorSettingsLoader {
       Type type = new TypeToken<ArrayList<ExecutorConfiguration>>() { } .getType();
       List<ExecutorConfiguration> executorConfigs = gson.fromJson(fileReader, type);
 
-      for(ExecutorConfiguration config: executorConfigs) {
+      for (ExecutorConfiguration config: executorConfigs) {
         executors.add(config.toExecutorSettings());
       }
-
-
-
     } catch (FileNotFoundException e) {
       throw new ExecutorSettingsConfigException("Config file could not be found", e);
     } catch (UnsupportedEncodingException e) {

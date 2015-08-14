@@ -1,4 +1,5 @@
-/** * Licensed under the Apache License, Version 2.0 (the "License");
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -44,6 +45,8 @@ public final class ResourceSlot {
    * Minimum resources required to run Thermos. In the wild Thermos needs about 0.01 CPU and
    * about 170MB (peak usage) of RAM. The RAM requirement has been rounded up to a power of 2.
    */
+
+  //TODO(rdelvalle): Make this dynamic for different executors
   @VisibleForTesting
   public static final Resources MIN_EXECUTOR_RESOURCES = new Resources(
       0.01,

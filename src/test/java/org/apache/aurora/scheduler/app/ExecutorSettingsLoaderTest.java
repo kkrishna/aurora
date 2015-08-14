@@ -13,7 +13,7 @@
  */
 package org.apache.aurora.scheduler.app;
 
-import java.util.Map;
+import java.util.Set;
 
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
@@ -31,7 +31,7 @@ public class ExecutorSettingsLoaderTest {
 
   @Test
   public void parse() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
-    Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
+    Set<ExecutorSettings> test = ExecutorSettingsLoader.load(
         getClass().getResource(CUSTOM_EXEC_EXAMPLE_RESOURCE).getFile());
 
     assertFalse(test.isEmpty());
@@ -39,7 +39,7 @@ public class ExecutorSettingsLoaderTest {
 
   @Test
   public void parseMesosCommand() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
-    Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
+    Set<ExecutorSettings> test = ExecutorSettingsLoader.load(
         getClass().getResource(MESOS_COMMAND_EXAMPLE_RESOURCE).getFile());
 
     assertFalse(test.isEmpty());

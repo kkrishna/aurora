@@ -15,14 +15,12 @@ package org.apache.aurora.scheduler.app;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
@@ -48,8 +46,6 @@ import com.twitter.common.zookeeper.guice.client.ZooKeeperClientModule;
 import com.twitter.common.zookeeper.guice.client.ZooKeeperClientModule.ClientConfig;
 import com.twitter.common.zookeeper.guice.client.flagged.FlaggedClientConfig;
 
-import org.apache.aurora.gen.Volume;
-import org.apache.aurora.scheduler.Resources;
 import org.apache.aurora.scheduler.SchedulerLifecycle;
 import org.apache.aurora.scheduler.cron.quartz.CronModule;
 import org.apache.aurora.scheduler.http.HttpService;
@@ -80,10 +76,6 @@ public class SchedulerMain extends AbstractApplication {
   @NotEmpty
   @CmdLine(name = "serverset_path", help = "ZooKeeper ServerSet path to register at.")
   private static final Arg<String> SERVERSET_PATH = Arg.create();
-
-  @CmdLine(name = "executor_name",
-      help = "Name of executor to be used by Aurora (by default thermos.)")
-  private static final Arg<String> EXECUTOR_NAME = Arg.create("thermos");
 
   @CmdLine(name = "executors_config_path", help = "Path to executor config JSON file")
   private static final Arg<String> EXECUTORS_CONFIG_PATH = Arg.create("");

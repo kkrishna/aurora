@@ -91,7 +91,7 @@ public class SchedulingFilterImplTest extends EasyMockTest {
 
   @Before
   public void setUp() {
-    defaultFilter = new SchedulingFilterImpl(TaskExecutors.NO_OVERHEAD_EXECUTOR);
+    defaultFilter = new SchedulingFilterImpl(TaskExecutors.TASK_EXECUTORS);
   }
 
   @Test
@@ -634,7 +634,7 @@ public class SchedulingFilterImplTest extends EasyMockTest {
         .setNumCpus(cpus)
         .setRamMb(ramMb)
         .setDiskMb(diskMb)
-        .setExecutorConfig(new ExecutorConfig("aurora", "config"))));
+        .setExecutorConfig(new ExecutorConfig("no-overhead", "config"))));
   }
 
   private ITaskConfig makeTask(int cpus, long ramMb, long diskMb) {

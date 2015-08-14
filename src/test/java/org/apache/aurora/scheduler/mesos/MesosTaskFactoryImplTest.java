@@ -13,6 +13,8 @@
  */
 package org.apache.aurora.scheduler.mesos;
 
+import java.util.Map;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -22,12 +24,11 @@ import org.apache.aurora.gen.AssignedTask;
 import org.apache.aurora.gen.Container;
 import org.apache.aurora.gen.DockerContainer;
 import org.apache.aurora.gen.DockerParameter;
+import org.apache.aurora.gen.ExecutorConfig;
 import org.apache.aurora.gen.Identity;
 import org.apache.aurora.gen.JobKey;
 import org.apache.aurora.gen.MesosContainer;
-import org.apache.aurora.gen.Mode;
 import org.apache.aurora.gen.TaskConfig;
-import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.Resources;
 import org.apache.aurora.scheduler.mesos.MesosTaskFactory.MesosTaskFactoryImpl;
@@ -47,17 +48,14 @@ import org.junit.Test;
 import static org.apache.aurora.scheduler.ResourceSlot.MIN_EXECUTOR_RESOURCES;
 import static org.apache.aurora.scheduler.mesos.TaskExecutors.NO_OVERHEAD_EXECUTOR;
 import static org.apache.aurora.scheduler.mesos.TaskExecutors.SOME_OVERHEAD_EXECUTOR;
+import static org.apache.aurora.scheduler.mesos.TaskExecutors.WRAPPER_TEST_EXECUTOR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MesosTaskFactoryImplTest {
 
   private static final String EXECUTOR_WRAPPER_PATH = "/fake/executor_wrapper.sh";
-  private static final IAssignedTask TASK = IAssignedTask.build(new AssignedTask()
-      .setInstanceId(2)
-      .setTaskId("task-id")
-      .setAssignedPorts(ImmutableMap.of("http", 80))
-      .setTask(new TaskConfig()
+  private static final TaskConfig TASK_CONFIG = new TaskConfig()
           .setJob(new JobKey("role", "environment", "job-name"))
           .setOwner(new Identity("role", "user"))
           .setEnvironment("environment")
@@ -66,15 +64,30 @@ public class MesosTaskFactoryImplTest {
           .setRamMb(100)
           .setNumCpus(5)
           .setContainer(Container.mesos(new MesosContainer()))
-          .setRequestedPorts(ImmutableSet.of("http"))));
-  private static final IAssignedTask TASK_WITH_DOCKER = IAssignedTask.build(TASK.newBuilder()
+          .setRequestedPorts(ImmutableSet.of("http"));
+  private static final AssignedTask ASSIGNED_TASK_BASE =
+      new AssignedTask()
+      .setInstanceId(2)
+      .setTaskId("task-id")
+      .setAssignedPorts(ImmutableMap.of("http", 80));
+
+  private static final IAssignedTask NO_OVERHEAD_TASK = IAssignedTask.build(ASSIGNED_TASK_BASE
+      .setTask(TASK_CONFIG.setExecutorConfig(new ExecutorConfig("no-overhead", "config"))));
+  private static final IAssignedTask SOME_OVERHEAD_TASK = IAssignedTask.build(ASSIGNED_TASK_BASE
+      .setTask(TASK_CONFIG.setExecutorConfig(new ExecutorConfig("some-overhead", "config"))));
+  private static final IAssignedTask WRAPPER_TEST_TASK = IAssignedTask.build(ASSIGNED_TASK_BASE
+      .setTask(TASK_CONFIG.setExecutorConfig(new ExecutorConfig("wrapper-test", "config"))));
+  private static final IAssignedTask TASK_WITH_DOCKER = IAssignedTask.build(
+      SOME_OVERHEAD_TASK.newBuilder()
       .setTask(
-          new TaskConfig(TASK.getTask().newBuilder())
+          new TaskConfig(SOME_OVERHEAD_TASK.getTask().newBuilder())
+              .setExecutorConfig(new ExecutorConfig("docker", "config"))
               .setContainer(Container.docker(
-                      new DockerContainer("testimage")))));
-  private static final IAssignedTask TASK_WITH_DOCKER_PARAMS = IAssignedTask.build(TASK.newBuilder()
+                  new DockerContainer("testimage")))));
+  private static final IAssignedTask TASK_WITH_DOCKER_PARAMS = IAssignedTask.build(
+      SOME_OVERHEAD_TASK.newBuilder()
       .setTask(
-          new TaskConfig(TASK.getTask().newBuilder())
+          new TaskConfig(SOME_OVERHEAD_TASK.getTask().newBuilder())
               .setContainer(Container.docker(
                   new DockerContainer("testimage").setParameters(
                       ImmutableList.of(new DockerParameter("label", "testparameter")))))));
@@ -82,14 +95,16 @@ public class MesosTaskFactoryImplTest {
   private static final SlaveID SLAVE = SlaveID.newBuilder().setValue("slave-id").build();
 
   private MesosTaskFactory taskFactory;
-  private ExecutorSettings config;
+  private Map<String, ExecutorSettings> config;
 
   private static final ExecutorInfo NO_OVERHEAD_EXECUTOR_INFO = ExecutorInfo.newBuilder()
       .setExecutorId(
           Protos.ExecutorID.newBuilder().setValue(
-              NO_OVERHEAD_EXECUTOR.getExecutorName() + "-" + TASK.getTaskId()).build())
+              NO_OVERHEAD_EXECUTOR.getExecutorName() + "-" + NO_OVERHEAD_TASK.getTaskId()).build())
       .setName(NO_OVERHEAD_EXECUTOR.getExecutorName())
-      .setSource(MesosTaskFactoryImpl.getInstanceSourceName(TASK.getTask(), TASK.getInstanceId()))
+      .setSource(MesosTaskFactoryImpl.getInstanceSourceName(
+          NO_OVERHEAD_TASK.getTask(),
+          NO_OVERHEAD_TASK.getInstanceId()))
       .addAllResources(MesosTaskFactoryImpl.RESOURCES_EPSILON.toResourceList())
       .setCommand(CommandInfo.newBuilder()
           .setValue("./executor.pex")
@@ -97,12 +112,33 @@ public class MesosTaskFactoryImplTest {
               .setExecutable(true)))
       .build();
 
+  private static final ExecutorInfo WRAPPER_TEST_EXECUTOR_INFO = ExecutorInfo.newBuilder()
+      .setExecutorId(
+          Protos.ExecutorID.newBuilder().setValue(
+              WRAPPER_TEST_EXECUTOR.getExecutorName()
+                  + "-"
+                  + WRAPPER_TEST_TASK.getTaskId()).build())
+      .setName(WRAPPER_TEST_EXECUTOR.getExecutorName())
+      .setSource(MesosTaskFactoryImpl.getInstanceSourceName(
+          WRAPPER_TEST_TASK.getTask(),
+          WRAPPER_TEST_TASK.getInstanceId()))
+      .addAllResources(MesosTaskFactoryImpl.RESOURCES_EPSILON.toResourceList())
+      .setCommand(CommandInfo.newBuilder()
+          .setValue("./executor.pex")
+          .addUris(URI.newBuilder().setValue(WRAPPER_TEST_EXECUTOR.getExecutorPath())
+              .setExecutable(true)))
+      .build();
+
   private static final ExecutorInfo SOME_OVERHEAD_EXECUTOR_INFO = ExecutorInfo.newBuilder()
       .setExecutorId(
           Protos.ExecutorID.newBuilder().setValue(
-              SOME_OVERHEAD_EXECUTOR.getExecutorName() + "-" + TASK.getTaskId()).build())
+              SOME_OVERHEAD_EXECUTOR.getExecutorName()
+                  + "-"
+                  + SOME_OVERHEAD_TASK.getTaskId()).build())
       .setName(SOME_OVERHEAD_EXECUTOR.getExecutorName())
-      .setSource(MesosTaskFactoryImpl.getInstanceSourceName(TASK.getTask(), TASK.getInstanceId()))
+      .setSource(MesosTaskFactoryImpl.getInstanceSourceName(
+          SOME_OVERHEAD_TASK.getTask(),
+          SOME_OVERHEAD_TASK.getInstanceId()))
       .addAllResources(MesosTaskFactoryImpl.RESOURCES_EPSILON.toResourceList())
       .setCommand(CommandInfo.newBuilder()
           .setValue("./executor.pex")
@@ -111,7 +147,7 @@ public class MesosTaskFactoryImplTest {
       .build();
 
   private static final ExecutorInfo NO_OVERHEAD_EXECUTOR_INFO_WITH_WRAPPER =
-      ExecutorInfo.newBuilder(NO_OVERHEAD_EXECUTOR_INFO)
+      ExecutorInfo.newBuilder(WRAPPER_TEST_EXECUTOR_INFO)
           .setCommand(CommandInfo.newBuilder()
               .setValue("./executor_wrapper.sh")
               .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
@@ -121,6 +157,7 @@ public class MesosTaskFactoryImplTest {
 
   private static final ExecutorInfo SOME_OVERHEAD_EXECUTOR_INFO_WITH_WRAPPER =
       ExecutorInfo.newBuilder(SOME_OVERHEAD_EXECUTOR_INFO)
+          .setName("wrapper-test")
           .setCommand(CommandInfo.newBuilder()
               .setValue("./executor_wrapper.sh")
               .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
@@ -129,21 +166,22 @@ public class MesosTaskFactoryImplTest {
           .build();
   @Before
   public void setUp() {
-    config = TaskExecutors.SOME_OVERHEAD_EXECUTOR;
+    config = TaskExecutors.TASK_EXECUTORS;
   }
 
   @Test
   public void testExecutorInfoUnchanged() {
     taskFactory = new MesosTaskFactoryImpl(config);
-    TaskInfo task = taskFactory.createFrom(TASK, SLAVE);
+    TaskInfo task = taskFactory.createFrom(SOME_OVERHEAD_TASK, SLAVE);
     assertEquals(SOME_OVERHEAD_EXECUTOR_INFO, task.getExecutor());
-    checkTaskResources(TASK.getTask(), task);
+    checkTaskResources(SOME_OVERHEAD_TASK.getTask(), task);
   }
 
   @Test
   public void testCreateFromPortsUnset() {
     taskFactory = new MesosTaskFactoryImpl(config);
-    AssignedTask assignedTask = TASK.newBuilder();
+    AssignedTask assignedTask = SOME_OVERHEAD_TASK.newBuilder();
+
     assignedTask.getTask().unsetRequestedPorts();
     assignedTask.unsetAssignedPorts();
     TaskInfo task = taskFactory.createFrom(IAssignedTask.build(assignedTask), SLAVE);
@@ -154,13 +192,12 @@ public class MesosTaskFactoryImplTest {
   public void testExecutorInfoNoOverhead() {
     // Here the ram required for the executor is greater than the sum of task resources
     // + executor overhead. We need to ensure we allocate a non-zero amount of ram in this case.
-    config = NO_OVERHEAD_EXECUTOR;
     taskFactory = new MesosTaskFactoryImpl(config);
-    TaskInfo task = taskFactory.createFrom(TASK, SLAVE);
+    TaskInfo task = taskFactory.createFrom(NO_OVERHEAD_TASK, SLAVE);
     assertEquals(NO_OVERHEAD_EXECUTOR_INFO, task.getExecutor());
 
     // Simulate the upsizing needed for the task to meet the minimum thermos requirements.
-    TaskConfig dummyTask = TASK.getTask().newBuilder()
+    TaskConfig dummyTask = NO_OVERHEAD_TASK.getTask().newBuilder()
         .setRamMb(ResourceSlot.MIN_EXECUTOR_RESOURCES.getRam().as(Data.MB));
     checkTaskResources(ITaskConfig.build(dummyTask), task);
   }
@@ -170,10 +207,9 @@ public class MesosTaskFactoryImplTest {
     // A very small task should be upsized to support the minimum resources required by the
     // executor.
 
-    config = NO_OVERHEAD_EXECUTOR;
     taskFactory = new MesosTaskFactoryImpl(config);
 
-    AssignedTask builder = TASK.newBuilder();
+    AssignedTask builder = NO_OVERHEAD_TASK.newBuilder();
     builder.getTask()
         .setNumCpus(0.001)
         .setRamMb(1)
@@ -189,8 +225,10 @@ public class MesosTaskFactoryImplTest {
 
   private void checkTaskResources(ITaskConfig task, TaskInfo taskInfo) {
     assertEquals(
-        ResourceSlot.sum(Resources.from(task), config.getExecutorOverhead()),
-        getTotalTaskResources(taskInfo));
+        ResourceSlot.sum(
+            Resources.from(task),
+            config.get(taskInfo.getExecutor().getName()).getExecutorOverhead()),
+            getTotalTaskResources(taskInfo));
   }
 
   private TaskInfo getDockerTaskInfo() {
@@ -198,7 +236,6 @@ public class MesosTaskFactoryImplTest {
   }
 
   private TaskInfo getDockerTaskInfo(IAssignedTask task) {
-    config = TaskExecutors.SOME_OVERHEAD_EXECUTOR;
     taskFactory = new MesosTaskFactoryImpl(config);
     return taskFactory.createFrom(task, SLAVE);
   }
@@ -229,28 +266,13 @@ public class MesosTaskFactoryImplTest {
 
   @Test
   public void testExecutorAndWrapper() {
-    config = ExecutorSettings.newBuilder()
-        .setExecutorName(NO_OVERHEAD_EXECUTOR.getExecutorName())
-        .setExecutorPath(EXECUTOR_WRAPPER_PATH)
-        .setExecutorResources(ImmutableList.of(NO_OVERHEAD_EXECUTOR.getExecutorPath()))
-        .setThermosObserverRoot("/var/run/thermos")
-        .setExecutorOverhead(NO_OVERHEAD_EXECUTOR.getExecutorOverhead())
-        .build();
     taskFactory = new MesosTaskFactoryImpl(config);
-    TaskInfo taskInfo = taskFactory.createFrom(TASK, SLAVE);
+    TaskInfo taskInfo = taskFactory.createFrom(WRAPPER_TEST_TASK, SLAVE);
     assertEquals(NO_OVERHEAD_EXECUTOR_INFO_WITH_WRAPPER, taskInfo.getExecutor());
   }
 
   @Test
   public void testGlobalMounts() {
-    config = ExecutorSettings.newBuilder()
-        .setExecutorName(SOME_OVERHEAD_EXECUTOR.getExecutorName())
-        .setExecutorPath(EXECUTOR_WRAPPER_PATH)
-        .setExecutorResources(ImmutableList.of(SOME_OVERHEAD_EXECUTOR.getExecutorPath()))
-        .setThermosObserverRoot("/var/run/thermos")
-        .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
-        .setGlobalContainerMounts(ImmutableList.of(new Volume("/container", "/host", Mode.RO)))
-        .build();
     taskFactory = new MesosTaskFactoryImpl(config);
     TaskInfo taskInfo = taskFactory.createFrom(TASK_WITH_DOCKER, SLAVE);
     Protos.Volume expected = Protos.Volume.newBuilder()

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.twitter.common.testing.easymock.EasyMockTest;
 
 import org.apache.aurora.gen.AssignedTask;
+import org.apache.aurora.gen.ExecutorConfig;
 import org.apache.aurora.gen.HostAttributes;
 import org.apache.aurora.gen.JobKey;
 import org.apache.aurora.gen.ScheduleStatus;
@@ -170,6 +171,7 @@ public class PreemptorImplTest extends EasyMockTest {
             .setTask(new TaskConfig()
                 .setPriority(1)
                 .setProduction(true)
+                .setExecutorConfig(new ExecutorConfig("preemptor", ""))
                 .setJob(new JobKey("role", "env", "name"))));
     task.addToTaskEvents(new TaskEvent(0, PENDING));
     return task;
