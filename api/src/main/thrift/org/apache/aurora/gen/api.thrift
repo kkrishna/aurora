@@ -43,7 +43,7 @@ struct APIVersion {
 const APIVersion CURRENT_API_VERSION = {'major': THRIFT_API_VERSION}
 
 // Aurora executor framework name.
-const string AURORA_EXECUTOR_NAME = 'AuroraExecutor'
+const string AURORA_EXECUTOR_NAME = 'thermos'
 
 // TODO(maxim): Remove in 0.7.0. (AURORA-749)
 struct Identity {
