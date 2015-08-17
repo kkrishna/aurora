@@ -98,7 +98,6 @@ public class MesosTaskFactoryImplTest {
   private MesosTaskFactory taskFactory;
   private Map<String, ExecutorSettings> config;
 
-<<<<<<< HEAD
   private static final ExecutorInfo NO_OVERHEAD_EXECUTOR_INFO = ExecutorInfo.newBuilder()
       .setExecutorId(
           Protos.ExecutorID.newBuilder().setValue(
