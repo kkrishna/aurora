@@ -29,7 +29,7 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 import org.junit.Test;
 
-import static org.apache.aurora.scheduler.mesos.TaskExecutors.FAKE_MESOS_COMMAND_EXECUTOR;
+import static org.apache.aurora.scheduler.mesos.TaskExecutors.FAKE_MESOS_COMMAND_EXECUTOR_SETTINGS;
 import static org.junit.Assert.assertEquals;
 
 public class ExecutorConfigurationTest {
@@ -49,7 +49,7 @@ public class ExecutorConfigurationTest {
 
     ExecutorSettings executorSettings = lst.get(0).toExecutorSettings();
 
-    assertEquals(executorSettings, FAKE_MESOS_COMMAND_EXECUTOR);
+    assertEquals(executorSettings, FAKE_MESOS_COMMAND_EXECUTOR_SETTINGS);
 
   }
 }

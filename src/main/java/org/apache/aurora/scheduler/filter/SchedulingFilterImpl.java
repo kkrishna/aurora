@@ -75,7 +75,7 @@ public class SchedulingFilterImpl implements SchedulingFilter {
       return range;
     }
 
-    private ResourceVector(String name, int range) {
+    ResourceVector(String name, int range) {
       this.name = name;
       this.range = range;
     }
@@ -206,11 +206,9 @@ public class SchedulingFilterImpl implements SchedulingFilter {
     ITaskConfig task = request.getTask();
     // 4. Resource check (lowest score).
 
-    //TODO(rdelvalle): Get scheduler to throw out task if the executor isn't in the config file
     return getResourceVetoes(
         resource.getResourceSlot(),
-        ResourceSlot.from(task,
-            requireNonNull(
+        ResourceSlot.from(request.getTask()).withOverhead(requireNonNull(
                 executorSettings.get(
                     task.getExecutorConfig().getName()))));
   }

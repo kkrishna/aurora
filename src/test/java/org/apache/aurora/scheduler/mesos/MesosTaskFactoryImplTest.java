@@ -46,9 +46,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.aurora.scheduler.ResourceSlot.MIN_EXECUTOR_RESOURCES;
-import static org.apache.aurora.scheduler.mesos.TaskExecutors.NO_OVERHEAD_EXECUTOR;
-import static org.apache.aurora.scheduler.mesos.TaskExecutors.SOME_OVERHEAD_EXECUTOR;
-import static org.apache.aurora.scheduler.mesos.TaskExecutors.WRAPPER_TEST_EXECUTOR;
+import static org.apache.aurora.scheduler.mesos.MesosTaskFactory.MesosTaskFactoryImpl.RESOURCES_EPSILON;
+import static org.apache.aurora.scheduler.mesos.TaskExecutors.NO_OVERHEAD_EXECUTOR_SETTINGS;
+import static org.apache.aurora.scheduler.mesos.TaskExecutors.SOME_OVERHEAD_EXECUTOR_SETTINGS;
+import static org.apache.aurora.scheduler.mesos.TaskExecutors.WRAPPER_TEST_EXECUTOR_SETTINGS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -97,52 +98,53 @@ public class MesosTaskFactoryImplTest {
   private MesosTaskFactory taskFactory;
   private Map<String, ExecutorSettings> config;
 
+<<<<<<< HEAD
   private static final ExecutorInfo NO_OVERHEAD_EXECUTOR_INFO = ExecutorInfo.newBuilder()
       .setExecutorId(
           Protos.ExecutorID.newBuilder().setValue(
-              NO_OVERHEAD_EXECUTOR.getExecutorName() + "-" + NO_OVERHEAD_TASK.getTaskId()).build())
-      .setName(NO_OVERHEAD_EXECUTOR.getExecutorName())
+              NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName() + "-" + NO_OVERHEAD_TASK.getTaskId()).build())
+      .setName(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName())
       .setSource(MesosTaskFactoryImpl.getInstanceSourceName(
           NO_OVERHEAD_TASK.getTask(),
           NO_OVERHEAD_TASK.getInstanceId()))
-      .addAllResources(MesosTaskFactoryImpl.RESOURCES_EPSILON.toResourceList())
+      .addAllResources(RESOURCES_EPSILON.toResourceList())
       .setCommand(CommandInfo.newBuilder()
           .setValue("./executor.pex")
-          .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
+          .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorPath())
               .setExecutable(true)))
       .build();
 
   private static final ExecutorInfo WRAPPER_TEST_EXECUTOR_INFO = ExecutorInfo.newBuilder()
       .setExecutorId(
           Protos.ExecutorID.newBuilder().setValue(
-              WRAPPER_TEST_EXECUTOR.getExecutorName()
+              WRAPPER_TEST_EXECUTOR_SETTINGS.getExecutorName()
                   + "-"
                   + WRAPPER_TEST_TASK.getTaskId()).build())
-      .setName(WRAPPER_TEST_EXECUTOR.getExecutorName())
+      .setName(WRAPPER_TEST_EXECUTOR_SETTINGS.getExecutorName())
       .setSource(MesosTaskFactoryImpl.getInstanceSourceName(
           WRAPPER_TEST_TASK.getTask(),
           WRAPPER_TEST_TASK.getInstanceId()))
       .addAllResources(MesosTaskFactoryImpl.RESOURCES_EPSILON.toResourceList())
       .setCommand(CommandInfo.newBuilder()
           .setValue("./executor.pex")
-          .addUris(URI.newBuilder().setValue(WRAPPER_TEST_EXECUTOR.getExecutorPath())
+          .addUris(URI.newBuilder().setValue(WRAPPER_TEST_EXECUTOR_SETTINGS.getExecutorPath())
               .setExecutable(true)))
       .build();
 
   private static final ExecutorInfo SOME_OVERHEAD_EXECUTOR_INFO = ExecutorInfo.newBuilder()
       .setExecutorId(
           Protos.ExecutorID.newBuilder().setValue(
-              SOME_OVERHEAD_EXECUTOR.getExecutorName()
+              SOME_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName()
                   + "-"
                   + SOME_OVERHEAD_TASK.getTaskId()).build())
-      .setName(SOME_OVERHEAD_EXECUTOR.getExecutorName())
+      .setName(SOME_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName())
       .setSource(MesosTaskFactoryImpl.getInstanceSourceName(
           SOME_OVERHEAD_TASK.getTask(),
           SOME_OVERHEAD_TASK.getInstanceId()))
       .addAllResources(MesosTaskFactoryImpl.RESOURCES_EPSILON.toResourceList())
       .setCommand(CommandInfo.newBuilder()
           .setValue("./executor.pex")
-          .addUris(URI.newBuilder().setValue(SOME_OVERHEAD_EXECUTOR.getExecutorPath())
+          .addUris(URI.newBuilder().setValue(SOME_OVERHEAD_EXECUTOR_SETTINGS.getExecutorPath())
               .setExecutable(true)))
       .build();
 
@@ -150,7 +152,7 @@ public class MesosTaskFactoryImplTest {
       ExecutorInfo.newBuilder(WRAPPER_TEST_EXECUTOR_INFO)
           .setCommand(CommandInfo.newBuilder()
               .setValue("./executor_wrapper.sh")
-              .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
+              .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorPath())
                   .setExecutable(true))
               .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true)))
           .build();
@@ -160,7 +162,7 @@ public class MesosTaskFactoryImplTest {
           .setName("wrapper-test")
           .setCommand(CommandInfo.newBuilder()
               .setValue("./executor_wrapper.sh")
-              .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
+              .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorPath())
                   .setExecutable(true))
               .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true)))
           .build();
@@ -225,10 +227,8 @@ public class MesosTaskFactoryImplTest {
 
   private void checkTaskResources(ITaskConfig task, TaskInfo taskInfo) {
     assertEquals(
-        ResourceSlot.sum(
-            Resources.from(task),
-            config.get(taskInfo.getExecutor().getName()).getExecutorOverhead()),
-            getTotalTaskResources(taskInfo));
+        ResourceSlot.from(task).withOverhead(config.get(taskInfo.getExecutor().getName())),
+        getTotalTaskResources(taskInfo));
   }
 
   private TaskInfo getDockerTaskInfo() {
@@ -283,9 +283,18 @@ public class MesosTaskFactoryImplTest {
     assertTrue(taskInfo.getExecutor().getContainer().getVolumesList().contains(expected));
   }
 
-  private static Resources getTotalTaskResources(TaskInfo task) {
-    Resources taskResources = Resources.from(task.getResourcesList());
-    Resources executorResources = Resources.from(task.getExecutor().getResourcesList());
-    return ResourceSlot.sum(taskResources, executorResources);
+  private static ResourceSlot getTotalTaskResources(TaskInfo task) {
+    Resources taskResources = fromResourceList(task.getResourcesList());
+    Resources executorResources = fromResourceList(task.getExecutor().getResourcesList());
+    return taskResources.slot().add(executorResources.slot());
+  }
+
+  private static Resources fromResourceList(Iterable<Protos.Resource> resources) {
+    return Resources.from(Protos.Offer.newBuilder()
+        .setId(Protos.OfferID.newBuilder().setValue("ignored"))
+        .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("ignored"))
+        .setSlaveId(SlaveID.newBuilder().setValue("ignored"))
+        .setHostname("ignored")
+        .addAllResources(resources).build());
   }
 }

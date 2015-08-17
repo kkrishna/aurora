@@ -15,10 +15,8 @@ package org.apache.aurora.scheduler;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ContiguousSet;
@@ -31,144 +29,31 @@ import com.google.common.collect.Sets;
 import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
 
-import org.apache.aurora.scheduler.base.Numbers;
-import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
 import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.Protos.Resource;
 import org.apache.mesos.Protos.Value.Range;
-import org.apache.mesos.Protos.Value.Ranges;
-import org.apache.mesos.Protos.Value.Scalar;
-import org.apache.mesos.Protos.Value.Type;
 
 import static java.util.Objects.requireNonNull;
 
+import static org.apache.aurora.scheduler.ResourceType.CPUS;
+import static org.apache.aurora.scheduler.ResourceType.DISK_MB;
+import static org.apache.aurora.scheduler.ResourceType.PORTS;
+import static org.apache.aurora.scheduler.ResourceType.RAM_MB;
+
 /**
- * A container for multiple resource vectors.
- * TODO(wfarner): Collapse this in with ResourceAggregates AURORA-105.
+ * A container for multiple Mesos resource vectors.
  */
-public class Resources {
-
-  public static final String CPUS = "cpus";
-  public static final String RAM_MB = "mem";
-  public static final String DISK_MB = "disk";
-  public static final String PORTS = "ports";
-
-  private static final Function<Range, Set<Integer>> RANGE_TO_MEMBERS =
-      new Function<Range, Set<Integer>>() {
-        @Override
-        public Set<Integer> apply(Range range) {
-          return ContiguousSet.create(
-              com.google.common.collect.Range.closed((int) range.getBegin(), (int) range.getEnd()),
-              DiscreteDomain.integers());
-        }
-      };
-
-  private final double numCpus;
-  private final Amount<Long, Data> disk;
-  private final Amount<Long, Data> ram;
-  private final int numPorts;
+public final class Resources {
 
   /**
-   * Creates a new resources object.
-   *
-   * @param numCpus Number of CPUs.
-   * @param ram Amount of RAM.
-   * @param disk Amount of disk.
-   * @param numPorts Number of ports.
+   * CPU resource filter.
    */
-  public Resources(double numCpus, Amount<Long, Data> ram, Amount<Long, Data> disk, int numPorts) {
-    this.numCpus = numCpus;
-    this.ram = requireNonNull(ram);
-    this.disk = requireNonNull(disk);
-    this.numPorts = numPorts;
-  }
+  public static final Predicate<Resource> CPU = e -> e.getName().equals(CPUS.getName());
 
-  /**
-   * Adapts this resources object to a list of mesos resources.
-   *
-   * @param selectedPorts The ports selected, to be applied as concrete task ranges.
-   * @return Mesos resources.
-   */
-  public List<Resource> toResourceList(Set<Integer> selectedPorts) {
-    ImmutableList.Builder<Resource> resourceBuilder =
-        ImmutableList.<Resource>builder()
-            .add(Resources.makeMesosResource(CPUS, numCpus))
-            .add(Resources.makeMesosResource(DISK_MB, disk.as(Data.MB)))
-            .add(Resources.makeMesosResource(RAM_MB, ram.as(Data.MB)));
-    if (!selectedPorts.isEmpty()) {
-      resourceBuilder.add(Resources.makeMesosRangeResource(Resources.PORTS, selectedPorts));
-    }
+  private final Iterable<Resource> mesosResources;
 
-    return resourceBuilder.build();
-  }
-
-  /**
-   * Convenience method for adapting to mesos resources without applying a port range.
-   *
-   * @see {@link #toResourceList(java.util.Set)}
-   * @return Mesos resources.
-   */
-  public List<Resource> toResourceList() {
-    return toResourceList(ImmutableSet.of());
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Resources)) {
-      return false;
-    }
-
-    Resources other = (Resources) o;
-    return Objects.equals(numCpus, other.numCpus)
-        && Objects.equals(ram, other.ram)
-        && Objects.equals(disk, other.disk)
-        && Objects.equals(numPorts, other.numPorts);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(numCpus, ram, disk, numPorts);
-  }
-
-  @Override
-  public String toString() {
-    return com.google.common.base.Objects.toStringHelper(this)
-        .add("numCpus", numCpus)
-        .add("ram", ram)
-        .add("disk", disk)
-        .add("numPorts", numPorts)
-        .toString();
-  }
-
-  /**
-   * Extracts the resources required from a task.
-   *
-   * @param task Task to get resources from.
-   * @return The resources required by the task.
-   */
-  public static Resources from(ITaskConfig task) {
-    requireNonNull(task);
-    return new Resources(
-        task.getNumCpus(),
-        Amount.of(task.getRamMb(), Data.MB),
-        Amount.of(task.getDiskMb(), Data.MB),
-        task.getRequestedPorts().size());
-  }
-
-  /**
-   * Extracts the resources specified in a list of resource objects.
-   *
-   * @param resources Resources to translate.
-   * @return The canonical resources.
-   */
-  public static Resources from(List<Resource> resources) {
-    requireNonNull(resources);
-    return new Resources(
-        getScalarValue(resources, CPUS),
-        Amount.of((long) getScalarValue(resources, RAM_MB), Data.MB),
-        Amount.of((long) getScalarValue(resources, DISK_MB), Data.MB),
-        getNumAvailablePorts(resources)
-    );
+  private Resources(Iterable<Resource> mesosResources) {
+    this.mesosResources = ImmutableList.copyOf(mesosResources);
   }
 
   /**
@@ -178,32 +63,67 @@ public class Resources {
    * @return The resources available in the offer.
    */
   public static Resources from(Offer offer) {
-    requireNonNull(offer);
-    return new Resources(
-        getScalarValue(offer, CPUS),
-        Amount.of((long) getScalarValue(offer, RAM_MB), Data.MB),
-        Amount.of((long) getScalarValue(offer, DISK_MB), Data.MB),
-        getNumAvailablePorts(offer.getResourcesList()));
+    return new Resources(requireNonNull(offer.getResourcesList()));
   }
 
-  @VisibleForTesting
-  public static final Resources NONE =
-      new Resources(0, Amount.of(0L, Data.BITS), Amount.of(0L, Data.BITS), 0);
+  /**
+   * Filters resources by the provided {@code predicate}.
+   *
+   * @param predicate Predicate filter.
+   * @return A new {@code Resources} object containing only filtered Mesos resources.
+   */
+  public Resources filter(Predicate<Resource> predicate) {
+    return new Resources(Iterables.filter(mesosResources, predicate));
+  }
 
-  private static int getNumAvailablePorts(List<Resource> resource) {
+  /**
+   * Gets generalized aggregated resource view.
+   *
+   * @return {@code ResourceSlot} instance.
+   */
+  public ResourceSlot slot() {
+    return new ResourceSlot(getScalarValue(CPUS.getName()),
+        Amount.of((long) getScalarValue(RAM_MB.getName()), Data.MB),
+        Amount.of((long) getScalarValue(DISK_MB.getName()), Data.MB),
+        getNumAvailablePorts());
+  }
+
+  /**
+   * Attempts to grab {@code numPorts} from this resource instance.
+   *
+   * @param numPorts The number of ports to grab.
+   * @return The set of ports grabbed.
+   * @throws InsufficientResourcesException if not enough ports were available.
+   */
+  public Set<Integer> getPorts(int numPorts)
+      throws InsufficientResourcesException {
+
+    if (numPorts == 0) {
+      return ImmutableSet.of();
+    }
+
+    List<Integer> availablePorts = Lists.newArrayList(Sets.newHashSet(Iterables.concat(
+        Iterables.transform(getPortRanges(), RANGE_TO_MEMBERS))));
+
+    if (availablePorts.size() < numPorts) {
+      throw new InsufficientResourcesException(
+          String.format("Could not get %d ports from %s", numPorts, availablePorts));
+    }
+
+    Collections.shuffle(availablePorts);
+    return ImmutableSet.copyOf(availablePorts.subList(0, numPorts));
+  }
+
+  private int getNumAvailablePorts() {
     int offeredPorts = 0;
-    for (Range range : getPortRanges(resource)) {
+    for (Range range : getPortRanges()) {
       offeredPorts += 1 + range.getEnd() - range.getBegin();
     }
     return offeredPorts;
   }
 
-  private static double getScalarValue(Offer offer, String key) {
-    return getScalarValue(offer.getResourcesList(), key);
-  }
-
-  private static double getScalarValue(List<Resource> resources, String key) {
-    Resource resource = getResource(resources, key);
+  private double getScalarValue(String key) {
+    Resource resource = getResource(key);
     if (resource == null) {
       return 0;
     }
@@ -211,102 +131,17 @@ public class Resources {
     return resource.getScalar().getValue();
   }
 
-  private static Resource getResource(List<Resource> resource, String key) {
-    return Iterables.find(resource, withName(key), null);
+  private Resource getResource(String key) {
+    return Iterables.find(mesosResources, e -> e.getName().equals(key), null);
   }
 
-  private static Predicate<Resource> withName(final String name) {
-    return new Predicate<Resource>() {
-      @Override
-      public boolean apply(Resource resource) {
-        return resource.getName().equals(name);
-      }
-    };
-  }
-
-  private static Iterable<Range> getPortRanges(List<Resource> resources) {
-    Resource resource = getResource(resources, Resources.PORTS);
+  private Iterable<Range> getPortRanges() {
+    Resource resource = getResource(PORTS.getName());
     if (resource == null) {
       return ImmutableList.of();
     }
 
     return resource.getRanges().getRangeList();
-  }
-
-  /**
-   * Creates a scalar mesos resource.
-   *
-   * @param name Name of the resource.
-   * @param value Value for the resource.
-   * @return A mesos resource.
-   */
-  public static Resource makeMesosResource(String name, double value) {
-    return Resource.newBuilder().setName(name).setType(Type.SCALAR)
-        .setScalar(Scalar.newBuilder().setValue(value)).build();
-  }
-
-  private static final Function<com.google.common.collect.Range<Integer>, Range> RANGE_TRANSFORM =
-      new Function<com.google.common.collect.Range<Integer>, Range>() {
-        @Override
-        public Range apply(com.google.common.collect.Range<Integer> input) {
-          return Range.newBuilder()
-              .setBegin(input.lowerEndpoint())
-              .setEnd(input.upperEndpoint())
-              .build();
-        }
-      };
-
-  /**
-   * Creates a mesos resource of integer ranges.
-   *
-   * @param name Name of the resource
-   * @param values Values to translate into ranges.
-   * @return A mesos ranges resource.
-   */
-  @VisibleForTesting
-  public static Resource makeMesosRangeResource(String name, Set<Integer> values) {
-    return Resource.newBuilder()
-        .setName(name)
-        .setType(Type.RANGES)
-        .setRanges(Ranges.newBuilder()
-            .addAllRange(Iterables.transform(Numbers.toRanges(values), RANGE_TRANSFORM)))
-        .build();
-  }
-
-  /**
-   * Number of CPUs.
-   *
-   * @return CPUs.
-   */
-  public double getNumCpus() {
-    return numCpus;
-  }
-
-  /**
-   * Disk amount.
-   *
-   * @return Disk.
-   */
-  public Amount<Long, Data> getDisk() {
-    return disk;
-  }
-
-  /**
-   * RAM amount.
-   *
-   * @return RAM.
-   */
-  public Amount<Long, Data> getRam() {
-    return ram;
-  }
-
-  /**
-   * Number of ports.
-   *
-   * @return Port count.
-   */
-  public int getNumPorts() {
-    return numPorts;
   }
 
   /**
@@ -318,33 +153,13 @@ public class Resources {
     }
   }
 
-  /**
-   * Attempts to grab {@code numPorts} from the given resource {@code offer}.
-   *
-   * @param offer The offer to grab ports from.
-   * @param numPorts The number of ports to grab.
-   * @return The set of ports grabbed.
-   * @throws InsufficientResourcesException if not enough ports were available.
-   */
-  public static Set<Integer> getPorts(Offer offer, int numPorts)
-      throws InsufficientResourcesException {
-
-    requireNonNull(offer);
-
-    if (numPorts == 0) {
-      return ImmutableSet.of();
-    }
-
-    List<Integer> availablePorts = Lists.newArrayList(Sets.newHashSet(
-        Iterables.concat(
-            Iterables.transform(getPortRanges(offer.getResourcesList()), RANGE_TO_MEMBERS))));
-
-    if (availablePorts.size() < numPorts) {
-      throw new InsufficientResourcesException(
-          String.format("Could not get %d ports from %s", numPorts, offer));
-    }
-
-    Collections.shuffle(availablePorts);
-    return ImmutableSet.copyOf(availablePorts.subList(0, numPorts));
-  }
+  private static final Function<Range, Set<Integer>> RANGE_TO_MEMBERS =
+      new Function<Range, Set<Integer>>() {
+        @Override
+        public Set<Integer> apply(Range range) {
+          return ContiguousSet.create(
+              com.google.common.collect.Range.closed((int) range.getBegin(), (int) range.getEnd()),
+              DiscreteDomain.integers());
+        }
+      };
 }

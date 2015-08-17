@@ -29,6 +29,7 @@ import com.google.common.collect.Sets;
 
 import org.apache.aurora.scheduler.HostOffer;
 import org.apache.aurora.scheduler.ResourceSlot;
+import org.apache.aurora.scheduler.Resources;
 import org.apache.aurora.scheduler.filter.AttributeAggregate;
 import org.apache.aurora.scheduler.filter.SchedulingFilter;
 import org.apache.aurora.scheduler.filter.SchedulingFilter.ResourceRequest;
@@ -40,6 +41,8 @@ import org.apache.aurora.scheduler.storage.entities.IHostAttributes;
 import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
 
 import static java.util.Objects.requireNonNull;
+
+import static org.apache.aurora.scheduler.ResourceSlot.sum;
 
 /**
  * Filters active tasks (victims) and available offer (slack) resources that can accommodate a
@@ -94,7 +97,7 @@ public interface PreemptionVictimFilter {
         new Function<HostOffer, ResourceSlot>() {
           @Override
           public ResourceSlot apply(HostOffer offer) {
-            return ResourceSlot.from(offer.getOffer());
+            return Resources.from(offer.getOffer()).slot();
           }
         };
 
@@ -118,7 +121,7 @@ public interface PreemptionVictimFilter {
         new Function<PreemptionVictim, ResourceSlot>() {
           @Override
           public ResourceSlot apply(PreemptionVictim victim) {
-            return ResourceSlot.from(victim, executorSettings.get(victim.getExecutorName()));
+            return victim.getResourceSlot().withOverhead(executorSettings.get(victim.getExecutorName()));
           }
         };
 
@@ -141,8 +144,7 @@ public interface PreemptionVictimFilter {
           .addAll(Iterables.transform(possibleVictims, VICTIM_TO_HOST))
           .addAll(Iterables.transform(offer.asSet(), OFFER_TO_HOST)).build();
 
-      ResourceSlot slackResources =
-          ResourceSlot.sum(Iterables.transform(offer.asSet(), OFFER_TO_RESOURCE_SLOT));
+      ResourceSlot slackResources = sum(Iterables.transform(offer.asSet(), OFFER_TO_RESOURCE_SLOT));
 
       FluentIterable<PreemptionVictim> preemptableTasks = FluentIterable.from(possibleVictims)
           .filter(preemptionFilter(pendingTask));
@@ -167,9 +169,8 @@ public interface PreemptionVictimFilter {
       for (PreemptionVictim victim : sortedVictims) {
         toPreemptTasks.add(victim);
 
-        ResourceSlot totalResource = ResourceSlot.sum(
-            ResourceSlot.sum(Iterables.transform(toPreemptTasks, victimToResources)),
-            slackResources);
+        ResourceSlot totalResource =
+            sum(Iterables.transform(toPreemptTasks, victimToResources)).add(slackResources);
 
         Set<Veto> vetoes = schedulingFilter.filter(
             new UnusedResource(totalResource, attributes.get()),

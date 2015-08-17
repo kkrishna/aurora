@@ -27,7 +27,7 @@ import org.apache.aurora.gen.JobKey;
 import org.apache.aurora.gen.ScheduledTask;
 import org.apache.aurora.gen.TaskConfig;
 import org.apache.aurora.scheduler.HostOffer;
-import org.apache.aurora.scheduler.ResourceSlot;
+import org.apache.aurora.scheduler.Resources;
 import org.apache.aurora.scheduler.base.TaskGroupKey;
 import org.apache.aurora.scheduler.base.Tasks;
 import org.apache.aurora.scheduler.filter.SchedulingFilter;
@@ -96,6 +96,10 @@ public class TaskAssignerImplTest extends EasyMockTest {
       .setSlaveId(MESOS_OFFER.getSlaveId())
       .build();
   private static final Map<String, TaskGroupKey> NO_RESERVATION = ImmutableMap.of();
+  private static final UnusedResource UNUSED =
+      new UnusedResource(Resources.from(MESOS_OFFER).slot(), OFFER.getAttributes());
+  private static final ResourceRequest RESOURCE_REQUEST =
+      new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY);
 
   private MutableStoreProvider storeProvider;
   private StateManager stateManager;
@@ -118,10 +122,7 @@ public class TaskAssignerImplTest extends EasyMockTest {
   public void testAssignNoVetoes() throws Exception {
     expect(offerManager.getOffers(GROUP_KEY)).andReturn(ImmutableSet.of(OFFER));
     offerManager.launchTask(MESOS_OFFER.getId(), TASK_INFO);
-    expect(filter.filter(
-        new UnusedResource(ResourceSlot.from(MESOS_OFFER), OFFER.getAttributes()),
-        new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY)))
-        .andReturn(ImmutableSet.of());
+    expect(filter.filter(UNUSED, RESOURCE_REQUEST)).andReturn(ImmutableSet.of());
     expect(stateManager.assignTask(
         storeProvider,
         Tasks.id(TASK),
@@ -146,9 +147,7 @@ public class TaskAssignerImplTest extends EasyMockTest {
   public void testAssignVetoesWithStaticBan() throws Exception {
     expect(offerManager.getOffers(GROUP_KEY)).andReturn(ImmutableSet.of(OFFER));
     offerManager.banOffer(MESOS_OFFER.getId(), GROUP_KEY);
-    expect(filter.filter(
-        new UnusedResource(ResourceSlot.from(MESOS_OFFER), OFFER.getAttributes()),
-        new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY)))
+    expect(filter.filter(UNUSED, RESOURCE_REQUEST))
         .andReturn(ImmutableSet.of(Veto.constraintMismatch("denied")));
 
     control.replay();
@@ -164,9 +163,7 @@ public class TaskAssignerImplTest extends EasyMockTest {
   @Test
   public void testAssignVetoesWithNoStaticBan() throws Exception {
     expect(offerManager.getOffers(GROUP_KEY)).andReturn(ImmutableSet.of(OFFER));
-    expect(filter.filter(
-        new UnusedResource(ResourceSlot.from(MESOS_OFFER), OFFER.getAttributes()),
-        new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY)))
+    expect(filter.filter(UNUSED, RESOURCE_REQUEST))
         .andReturn(ImmutableSet.of(Veto.unsatisfiedLimit("limit")));
 
     control.replay();
@@ -184,10 +181,7 @@ public class TaskAssignerImplTest extends EasyMockTest {
     expect(offerManager.getOffers(GROUP_KEY)).andReturn(ImmutableSet.of(OFFER));
     offerManager.launchTask(MESOS_OFFER.getId(), TASK_INFO);
     expectLastCall().andThrow(new OfferManager.LaunchException("expected"));
-    expect(filter.filter(
-        new UnusedResource(ResourceSlot.from(MESOS_OFFER), OFFER.getAttributes()),
-        new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY)))
-        .andReturn(ImmutableSet.of());
+    expect(filter.filter(UNUSED, RESOURCE_REQUEST)).andReturn(ImmutableSet.of());
     expect(stateManager.assignTask(
         storeProvider,
         Tasks.id(TASK),
@@ -250,10 +244,7 @@ public class TaskAssignerImplTest extends EasyMockTest {
         IHostAttributes.build(new HostAttributes()));
 
     expect(offerManager.getOffers(GROUP_KEY)).andReturn(ImmutableSet.of(offer, OFFER));
-    expect(filter.filter(
-        new UnusedResource(ResourceSlot.from(offer.getOffer()), offer.getAttributes()),
-        new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY)))
-        .andReturn(ImmutableSet.of());
+    expect(filter.filter(UNUSED, RESOURCE_REQUEST)).andReturn(ImmutableSet.of());
     expect(stateManager.assignTask(
         storeProvider,
         Tasks.id(TASK),
@@ -264,6 +255,57 @@ public class TaskAssignerImplTest extends EasyMockTest {
     expect(taskFactory.createFrom(TASK.getAssignedTask(), offer.getOffer().getSlaveId()))
         .andReturn(TASK_INFO);
     offerManager.launchTask(offer.getOffer().getId(), TASK_INFO);
+
+    control.replay();
+
+    assertTrue(assigner.maybeAssign(
+        storeProvider,
+        new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY),
+        TaskGroupKey.from(TASK.getAssignedTask().getTask()),
+        Tasks.id(TASK),
+        ImmutableMap.of(SLAVE_ID, GROUP_KEY)));
+  }
+
+  @Test
+  public void testAssignerDoesNotReturnOnFirstMismatch() throws Exception {
+    // Ensures scheduling loop does not terminate prematurely when the first mismatch is identified.
+    HostOffer mismatched = new HostOffer(
+        Offer.newBuilder()
+            .setId(OfferID.newBuilder().setValue("offerId0"))
+            .setFrameworkId(FrameworkID.newBuilder().setValue("frameworkId"))
+            .setSlaveId(SlaveID.newBuilder().setValue("slaveId0"))
+            .setHostname("hostName0")
+            .addResources(Resource.newBuilder()
+                .setName("ports")
+                .setType(Type.RANGES)
+                .setRanges(
+                    Ranges.newBuilder().addRange(Range.newBuilder().setBegin(PORT).setEnd(PORT))))
+            .build(),
+        IHostAttributes.build(new HostAttributes()));
+
+    expect(offerManager.getOffers(GROUP_KEY)).andReturn(ImmutableSet.of(mismatched, OFFER));
+    expect(filter.filter(
+        new UnusedResource(
+            Resources.from(mismatched.getOffer()).slot(),
+            mismatched.getAttributes()),
+        new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY)))
+        .andReturn(ImmutableSet.of(Veto.constraintMismatch("constraint mismatch")));
+    offerManager.banOffer(mismatched.getOffer().getId(), GROUP_KEY);
+    expect(filter.filter(
+        new UnusedResource(Resources.from(OFFER.getOffer()).slot(), OFFER.getAttributes()),
+        new ResourceRequest(TASK.getAssignedTask().getTask(), EMPTY)))
+        .andReturn(ImmutableSet.of());
+
+    expect(stateManager.assignTask(
+        storeProvider,
+        Tasks.id(TASK),
+        OFFER.getOffer().getHostname(),
+        OFFER.getOffer().getSlaveId(),
+        ImmutableMap.of(PORT_NAME, PORT)))
+        .andReturn(TASK.getAssignedTask());
+    expect(taskFactory.createFrom(TASK.getAssignedTask(), OFFER.getOffer().getSlaveId()))
+        .andReturn(TASK_INFO);
+    offerManager.launchTask(OFFER.getOffer().getId(), TASK_INFO);
 
     control.replay();
 

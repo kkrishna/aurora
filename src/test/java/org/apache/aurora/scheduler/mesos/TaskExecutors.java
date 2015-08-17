@@ -26,7 +26,7 @@ import com.twitter.common.quantity.Data;
 
 import org.apache.aurora.gen.Mode;
 import org.apache.aurora.gen.Volume;
-import org.apache.aurora.scheduler.Resources;
+import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.app.VolumeParser;
 
 /**
@@ -42,23 +42,23 @@ public final class TaskExecutors {
   private static final String EXECUTOR_WRAPPER_PATH = "/fake/executor_wrapper.sh";
   private static final String EXECUTOR_PATH = "/fake/executor.pex";
 
-  public static final ExecutorSettings NO_OVERHEAD_EXECUTOR =
+  public static final ExecutorSettings NO_OVERHEAD_EXECUTOR_SETTINGS =
       ExecutorSettings.newBuilder()
           .setExecutorName("no-overhead")
           .setExecutorPath(EXECUTOR_PATH)
           .setThermosObserverRoot("/var/run/thermos")
           .build();
 
-  public static final ExecutorSettings SOME_OVERHEAD_EXECUTOR =
+  public static final ExecutorSettings SOME_OVERHEAD_EXECUTOR_SETTINGS =
       ExecutorSettings.newBuilder()
           .setExecutorName("some-overhead")
           .setExecutorPath(EXECUTOR_PATH)
           .setThermosObserverRoot("/var/run/thermos")
           .setExecutorOverhead(
-              new Resources(0.01, Amount.of(256L, Data.MB), Amount.of(0L, Data.MB), 0))
+              new ResourceSlot(0.01, Amount.of(256L, Data.MB), Amount.of(0L, Data.MB), 0))
           .build();
 
-  public static final ExecutorSettings FAKE_MESOS_COMMAND_EXECUTOR =
+  public static final ExecutorSettings FAKE_MESOS_COMMAND_EXECUTOR_SETTINGS =
       ExecutorSettings.newBuilder()
           .setExecutorName("mesos-command")
           .setExecutorResources(Arrays.<String>asList("/path/to/resource"))
@@ -66,36 +66,37 @@ public final class TaskExecutors {
           .setGlobalContainerMounts(
               Arrays.<Volume>asList(new VolumeParser().doParse("/host:/container1:ro")))
           .setExecutorOverhead(
-              new Resources(1.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
+              new ResourceSlot(1.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
           .build();
 
-  public static final ExecutorSettings FAKE_DOCKER_EXECUTOR =
+  public static final ExecutorSettings FAKE_DOCKER_EXECUTOR_SETTINGS =
       ExecutorSettings.newBuilder()
-              .setExecutorName("docker")
-              .setExecutorPath(EXECUTOR_WRAPPER_PATH)
-              .setExecutorResources(ImmutableList.of(SOME_OVERHEAD_EXECUTOR.getExecutorPath()))
-              .setThermosObserverRoot("/var/run/thermos")
-              .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
-              .setGlobalContainerMounts(ImmutableList.of(
-                  new Volume("/container", "/host", Mode.RO)))
-              .build();
+          .setExecutorName("docker")
+          .setExecutorPath(EXECUTOR_WRAPPER_PATH)
+          .setExecutorResources(ImmutableList.of(SOME_OVERHEAD_EXECUTOR_SETTINGS.getExecutorPath()))
+          .setThermosObserverRoot("/var/run/thermos")
+          .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR_SETTINGS.getExecutorOverhead())
+          .setGlobalContainerMounts(ImmutableList.of(
+              new Volume("/container", "/host", Mode.RO)))
+          .build();
 
-  public static final ExecutorSettings WRAPPER_TEST_EXECUTOR =
+  public static final ExecutorSettings WRAPPER_TEST_EXECUTOR_SETTINGS =
       ExecutorSettings.newBuilder()
-        .setExecutorName("wrapper-test")
-        .setExecutorPath(EXECUTOR_WRAPPER_PATH)
-        .setExecutorResources(ImmutableList.of(NO_OVERHEAD_EXECUTOR.getExecutorPath()))
-        .setThermosObserverRoot("/var/run/thermos")
-        .setExecutorOverhead(NO_OVERHEAD_EXECUTOR.getExecutorOverhead())
-        .build();
+          .setExecutorName("wrapper-test")
+          .setExecutorPath(EXECUTOR_WRAPPER_PATH)
+          .setExecutorResources(ImmutableList.of(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorPath()))
+          .setThermosObserverRoot("/var/run/thermos")
+          .setExecutorOverhead(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorOverhead())
+          .build();
 
   static {
     Map<String, ExecutorSettings> temp = new HashMap<String, ExecutorSettings>();
-    temp.put(NO_OVERHEAD_EXECUTOR.getExecutorName(), NO_OVERHEAD_EXECUTOR);
-    temp.put(SOME_OVERHEAD_EXECUTOR.getExecutorName(), SOME_OVERHEAD_EXECUTOR);
-    temp.put(FAKE_MESOS_COMMAND_EXECUTOR.getExecutorName(), FAKE_MESOS_COMMAND_EXECUTOR);
-    temp.put(FAKE_DOCKER_EXECUTOR.getExecutorName(), FAKE_DOCKER_EXECUTOR);
-    temp.put(WRAPPER_TEST_EXECUTOR.getExecutorName(), WRAPPER_TEST_EXECUTOR);
+    temp.put(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName(), NO_OVERHEAD_EXECUTOR_SETTINGS);
+    temp.put(SOME_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName(), SOME_OVERHEAD_EXECUTOR_SETTINGS);
+    temp.put(FAKE_MESOS_COMMAND_EXECUTOR_SETTINGS.getExecutorName(),
+        FAKE_MESOS_COMMAND_EXECUTOR_SETTINGS);
+    temp.put(FAKE_DOCKER_EXECUTOR_SETTINGS.getExecutorName(), FAKE_DOCKER_EXECUTOR_SETTINGS);
+    temp.put(WRAPPER_TEST_EXECUTOR_SETTINGS.getExecutorName(), WRAPPER_TEST_EXECUTOR_SETTINGS);
 
     TASK_EXECUTORS = ImmutableMap.<String, ExecutorSettings>copyOf(temp);
   }

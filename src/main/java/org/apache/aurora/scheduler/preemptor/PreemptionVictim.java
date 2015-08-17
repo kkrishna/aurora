@@ -15,7 +15,7 @@ package org.apache.aurora.scheduler.preemptor;
 
 import java.util.Objects;
 
-import org.apache.aurora.scheduler.Resources;
+import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.storage.entities.IAssignedTask;
 import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
 
@@ -27,7 +27,7 @@ public final class PreemptionVictim {
   private final boolean production;
   private final String role;
   private final int priority;
-  private final Resources resources;
+  private final ResourceSlot resourceSlot;
   private final String taskId;
   private final String executorName;
 
@@ -36,7 +36,7 @@ public final class PreemptionVictim {
       boolean production,
       String role,
       int priority,
-      Resources resources,
+      ResourceSlot resourceSlot,
       String taskId,
       String executorName) {
 
@@ -44,7 +44,7 @@ public final class PreemptionVictim {
     this.production = production;
     this.role = role;
     this.priority = priority;
-    this.resources = resources;
+    this.resourceSlot = resourceSlot;
     this.taskId = taskId;
     this.executorName = executorName;
   }
@@ -56,7 +56,7 @@ public final class PreemptionVictim {
         config.isProduction(),
         config.getJob().getRole(),
         config.getPriority(),
-        Resources.from(task.getTask()),
+        ResourceSlot.from(task.getTask()),
         task.getTaskId(),
         config.getExecutorConfig().getName());
   }
@@ -77,8 +77,8 @@ public final class PreemptionVictim {
     return priority;
   }
 
-  public Resources getResources() {
-    return resources;
+  public ResourceSlot getResourceSlot() {
+    return resourceSlot;
   }
 
   public String getTaskId() {
@@ -100,14 +100,14 @@ public final class PreemptionVictim {
         && Objects.equals(isProduction(), other.isProduction())
         && Objects.equals(getRole(), other.getRole())
         && Objects.equals(getPriority(), other.getPriority())
-        && Objects.equals(getResources(), other.getResources())
+        && Objects.equals(getResourceSlot(), other.getResourceSlot())
         && Objects.equals(getTaskId(), other.getTaskId())
         && Objects.equals(getExecutorName(), other.getExecutorName());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(slaveHost, production, role, priority, resources, taskId, executorName);
+    return Objects.hash(slaveHost, production, role, priority, resourceSlot, taskId, executorName);
   }
 
   @Override
@@ -117,7 +117,7 @@ public final class PreemptionVictim {
         .add("production", isProduction())
         .add("role", getRole())
         .add("priority", getPriority())
-        .add("resources", getResources())
+        .add("resourceSlot", getResourceSlot())
         .add("taskId", getTaskId())
         .add("executorName", getExecutorName())
         .toString();

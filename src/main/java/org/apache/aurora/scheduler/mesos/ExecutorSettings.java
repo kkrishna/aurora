@@ -20,7 +20,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import org.apache.aurora.gen.Volume;
-import org.apache.aurora.scheduler.Resources;
+import org.apache.aurora.scheduler.ResourceSlot;
 
 import static java.util.Objects.requireNonNull;
 
@@ -33,7 +33,7 @@ public final class ExecutorSettings {
   private final List<String> executorResources;
   private final String thermosObserverRoot;
   private final Optional<String> executorFlags;
-  private final Resources executorOverhead;
+  private final ResourceSlot executorOverhead;
   private final List<Volume> globalContainerMounts;
   //private final JsonObject dataBlob;
 
@@ -43,7 +43,7 @@ public final class ExecutorSettings {
       List<String> executorResources,
       String thermosObserverRoot,
       Optional<String> executorFlags,
-      Resources executorOverhead,
+      ResourceSlot executorOverhead,
       List<Volume> globalContainerMounts) {
 
     //TODO: Remove check when observer is axed
@@ -90,7 +90,7 @@ public final class ExecutorSettings {
     return executorFlags;
   }
 
-  public Resources getExecutorOverhead() {
+  public ResourceSlot getExecutorOverhead() {
     return executorOverhead;
   }
 
@@ -140,13 +140,13 @@ public final class ExecutorSettings {
     private List<String> executorResources;
     private String thermosObserverRoot;
     private Optional<String> executorFlags;
-    private Resources executorOverhead;
+    private ResourceSlot executorOverhead;
     private List<Volume> globalContainerMounts;
 
     Builder() {
       executorResources = ImmutableList.of();
       executorFlags = Optional.absent();
-      executorOverhead = Resources.NONE;
+      executorOverhead = ResourceSlot.NONE;
       globalContainerMounts = ImmutableList.of();
     }
 
@@ -175,7 +175,7 @@ public final class ExecutorSettings {
       return this;
     }
 
-    public Builder setExecutorOverhead(Resources executorOverhead) {
+    public Builder setExecutorOverhead(ResourceSlot executorOverhead) {
       this.executorOverhead = executorOverhead;
       return this;
     }
