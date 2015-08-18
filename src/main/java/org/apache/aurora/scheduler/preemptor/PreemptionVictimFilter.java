@@ -121,7 +121,8 @@ public interface PreemptionVictimFilter {
         new Function<PreemptionVictim, ResourceSlot>() {
           @Override
           public ResourceSlot apply(PreemptionVictim victim) {
-            return victim.getResourceSlot().withOverhead(executorSettings.get(victim.getExecutorName()));
+            return victim.getResourceSlot()
+                .withOverhead(executorSettings.get(victim.getExecutorName()));
           }
         };
 

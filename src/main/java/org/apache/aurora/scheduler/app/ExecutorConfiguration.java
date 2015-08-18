@@ -26,7 +26,7 @@ import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
 
 import org.apache.aurora.gen.Volume;
-import org.apache.aurora.scheduler.Resources;
+import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
 /**
@@ -42,7 +42,6 @@ public class ExecutorConfiguration {
   private String executorFlags;
   private Set<String> globalContainerMounts;
   private ExecutorOverhead overhead;
-  private JsonObject customSchema;
 
   /**
    * Inner class to encapsulate Overhead into a JSON object.
@@ -56,10 +55,6 @@ public class ExecutorConfiguration {
 
   public String getName() {
     return name;
-  }
-
-  public JsonObject getCustomSchema() {
-    return customSchema;
   }
 
   /**
@@ -95,7 +90,7 @@ public class ExecutorConfiguration {
         .setExecutorResources(ImmutableList.<String>copyOf(this.resources))
         .setThermosObserverRoot(this.thermosObserverRoot)
         .setExecutorOverhead(
-            new Resources(overhead.numCpus,
+            new ResourceSlot(overhead.numCpus,
                 Amount.of(overhead.ramMB, Data.MB),
                 Amount.of(overhead.diskMB, Data.MB),
                 overhead.numPorts)

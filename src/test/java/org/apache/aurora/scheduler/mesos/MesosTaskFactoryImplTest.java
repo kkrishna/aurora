@@ -101,7 +101,9 @@ public class MesosTaskFactoryImplTest {
   private static final ExecutorInfo NO_OVERHEAD_EXECUTOR_INFO = ExecutorInfo.newBuilder()
       .setExecutorId(
           Protos.ExecutorID.newBuilder().setValue(
-              NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName() + "-" + NO_OVERHEAD_TASK.getTaskId()).build())
+              NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName()
+                  + "-"
+                  + NO_OVERHEAD_TASK.getTaskId()).build())
       .setName(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorName())
       .setSource(MesosTaskFactoryImpl.getInstanceSourceName(
           NO_OVERHEAD_TASK.getTask(),

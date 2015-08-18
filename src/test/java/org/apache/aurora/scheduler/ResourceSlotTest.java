@@ -30,7 +30,7 @@ import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
 import org.apache.mesos.Protos;
 import org.junit.Test;
 
-import static org.apache.aurora.scheduler.ResourceSlot.MIN_THERMOS_RESOURCES;
+import static org.apache.aurora.scheduler.ResourceSlot.MIN_EXECUTOR_RESOURCES;
 import static org.apache.aurora.scheduler.ResourceSlot.makeMesosRangeResource;
 import static org.apache.aurora.scheduler.ResourceSlot.makeMesosResource;
 import static org.apache.aurora.scheduler.ResourceSlot.maxElements;
@@ -92,8 +92,9 @@ public class ResourceSlotTest {
 
   @Test
   public void testWithOverhead() {
-    assertEquals(maxElements(TWO, MIN_THERMOS_RESOURCES), ONE.withOverhead(
+    assertEquals(maxElements(TWO, MIN_EXECUTOR_RESOURCES), ONE.withOverhead(
         ExecutorSettings.newBuilder()
+            .setExecutorName("test-with-overhead")
             .setExecutorOverhead(ONE)
             .setExecutorPath("ignored")
             .setThermosObserverRoot("ignored")

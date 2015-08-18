@@ -27,14 +27,6 @@
       "diskMB": 0,
       "ramMB": 128,
       "numPorts": 0
-    },
-    "customSchema": {
-      "test": [
-
-        "foo",
-        "bar"
-        ]
-
     }
   }
 ]

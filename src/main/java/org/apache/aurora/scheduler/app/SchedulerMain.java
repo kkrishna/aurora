@@ -46,8 +46,6 @@ import com.twitter.common.zookeeper.guice.client.ZooKeeperClientModule;
 import com.twitter.common.zookeeper.guice.client.ZooKeeperClientModule.ClientConfig;
 import com.twitter.common.zookeeper.guice.client.flagged.FlaggedClientConfig;
 
-import org.apache.aurora.gen.Volume;
-import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.SchedulerLifecycle;
 import org.apache.aurora.scheduler.cron.quartz.CronModule;
 import org.apache.aurora.scheduler.http.HttpService;
@@ -223,4 +221,5 @@ public class SchedulerMain extends AbstractApplication {
   public static void main(String... args) {
     AppLauncher.launch(SchedulerMain.class, args);
   }
+}
 
