@@ -20,7 +20,6 @@ import java.util.logging.Logger;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.gson.JsonObject;
 
 import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
