@@ -158,15 +158,6 @@ public class MesosTaskFactoryImplTest {
               .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true)))
           .build();
 
-  private static final ExecutorInfo SOME_OVERHEAD_EXECUTOR_INFO_WITH_WRAPPER =
-      ExecutorInfo.newBuilder(SOME_OVERHEAD_EXECUTOR_INFO)
-          .setName("wrapper-test")
-          .setCommand(CommandInfo.newBuilder()
-              .setValue("./executor_wrapper.sh")
-              .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR_SETTINGS.getExecutorPath())
-                  .setExecutable(true))
-              .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true)))
-          .build();
   @Before
   public void setUp() {
     config = TaskExecutors.TASK_EXECUTORS;

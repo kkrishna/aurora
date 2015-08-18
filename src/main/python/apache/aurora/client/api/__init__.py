@@ -68,6 +68,7 @@ class AuroraClientAPI(object):
   @property
   def cluster(self):
     return self._cluster
+
   @property
   def scheduler_proxy(self):
     return self._scheduler_proxy
