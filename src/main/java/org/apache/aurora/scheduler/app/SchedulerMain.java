@@ -13,6 +13,7 @@
  */
 package org.apache.aurora.scheduler.app;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.logging.Logger;
@@ -33,6 +34,8 @@ import com.twitter.common.application.Lifecycle;
 import com.twitter.common.application.modules.StatsModule;
 import com.twitter.common.args.Arg;
 import com.twitter.common.args.CmdLine;
+import com.twitter.common.args.constraints.CanRead;
+import com.twitter.common.args.constraints.Exists;
 import com.twitter.common.args.constraints.NotEmpty;
 import com.twitter.common.args.constraints.NotNull;
 import com.twitter.common.inject.Bindings;
@@ -125,6 +128,10 @@ public class SchedulerMain extends AbstractApplication {
       help = "A comma seperated list of mount points (in host:container form) to mount "
           + "into all (non-mesos) containers.")
   private static final Arg<List<Volume>> GLOBAL_CONTAINER_MOUNTS = Arg.create(ImmutableList.of());
+
+  @CanRead
+  @CmdLine(name = "executors_config_path", help = "Path to executor config JSON file")
+  private static final Arg<File> EXECUTORS_CONFIG_PATH = Arg.create();
 
   @Inject private SingletonService schedulerService;
   @Inject private HttpService httpService;
@@ -237,6 +244,7 @@ public class SchedulerMain extends AbstractApplication {
           + "**************************************************************************"
       );
     }
+
 
     LeadershipListener leaderListener = schedulerLifecycle.prepare();
 
