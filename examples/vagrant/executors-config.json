@@ -1,7 +1,7 @@
 [
   {
     "name": "thermos",
-    "command": "/home/vagrant/aurora/dist/thermos_executor.pex",
+    "path": "/home/vagrant/aurora/dist/thermos_executor.pex",
     "resources": [
     ],
     "thermosObserverRoot":"/var/run/thermos",

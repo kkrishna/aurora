@@ -1,0 +1,104 @@
+/**
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.aurora.scheduler.configuration;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+
+import com.google.gson.reflect.TypeToken;
+
+import com.twitter.common.quantity.Amount;
+import com.twitter.common.quantity.Data;
+
+import org.apache.aurora.scheduler.ResourceSlot;
+import org.apache.aurora.scheduler.mesos.ExecutorSettings;
+
+/**
+ * Executor configuration file loader.
+ */
+public final class ExecutorSettingsLoader {
+  /**
+   * No instances of this class should exist.
+   */
+  private ExecutorSettingsLoader()  {
+  }
+
+  /**
+   * Exception class to cluster all errors that reading the config file
+   * could generate into a general config file parsing error.
+   */
+  public static class ExecutorSettingsConfigException extends Exception {
+    public ExecutorSettingsConfigException(String message, Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  /**
+   * Executor settings map loader to be called whenever Map needs to be generated from
+   * the JSON config file.
+   */
+  public static ImmutableSet<ExecutorSettings> load(File configFile)
+      throws ExecutorSettingsConfigException {
+
+    Set<ExecutorSettings> executors = new HashSet<ExecutorSettings>();
+
+    try {
+      Reader fileReader = new InputStreamReader(new FileInputStream(configFile), "UTF8");
+      Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    } catch (FileNotFoundException e) {
+    } catch (UnsupportedEncodingException e) {
+      throw new ExecutorSettingsConfigException("Config file needs to be in UTF8 format", e);
+    } catch (JsonParseException e) {
+      throw new ExecutorSettingsConfigException("Error parsing JSON", e);
+    } catch (NullPointerException e) {
+      throw new ExecutorSettingsConfigException("A required parameter is missing", e);
+    }
+
+    return ImmutableSet.<ExecutorSettings>copyOf(executors);
+  }
+
+  static class ResourceSlotDeserializer implements JsonDeserializer<ResourceSlot> {
+
+    @Override
+    public ResourceSlot deserialize(JsonElement json, Type typeofT, JsonDeserializationContext context)
+        throws JsonParseException {
+
+      JsonObject jsonObj = (JsonObject) json;
+
+      return new ResourceSlot(jsonObj.get("numCpus").getAsDouble(),
+          Amount.of(jsonObj.get("ramMB").getAsLong(), Data.MB),
+          Amount.of(jsonObj.get("diskMB").getAsLong(), Data.MB),
+          jsonObj.get("numPorts").getAsInt());
+    }
+  }
+}

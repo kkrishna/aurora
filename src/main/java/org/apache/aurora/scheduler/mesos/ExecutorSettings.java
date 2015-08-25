@@ -17,6 +17,7 @@ import java.util.List;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.annotations.SerializedName;
 
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
@@ -27,14 +28,16 @@ import static java.util.Objects.requireNonNull;
  * Configuration for the executor to run, and resource overhead required for it.
  */
 public final class ExecutorSettings {
-  private final String executorPath;
-  private final List<String> executorResources;
-  private final String thermosObserverRoot;
-  private final Optional<String> executorFlags;
-  private final ResourceSlot executorOverhead;
+  @SerializedName("name") private final String executorName;
+  @SerializedName("path") private final String executorPath;
+  @SerializedName("resources") private final List<String> executorResources;
+  @SerializedName("flags" ) private final Optional<String> executorFlags;
+  @SerializedName("overhead") private final ResourceSlot executorOverhead;
   private final List<Volume> globalContainerMounts;
+  private final String thermosObserverRoot;
 
   ExecutorSettings(
+      String executorName,
       String executorPath,
       List<String> executorResources,
       String thermosObserverRoot,
@@ -42,12 +45,17 @@ public final class ExecutorSettings {
       ResourceSlot executorOverhead,
       List<Volume> globalContainerMounts) {
 
+    this.executorName = requireNonNull(executorName);
     this.executorPath = requireNonNull(executorPath);
     this.executorResources = requireNonNull(executorResources);
     this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
     this.executorFlags = requireNonNull(executorFlags);
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
+  }
+
+  public String getExecutorName() {
+    return executorName;
   }
 
   public String getExecutorPath() {
@@ -79,6 +87,7 @@ public final class ExecutorSettings {
   }
 
   public static final class Builder {
+    private String executorName;
     private String executorPath;
     private List<String> executorResources;
     private String thermosObserverRoot;
@@ -91,6 +100,11 @@ public final class ExecutorSettings {
       executorFlags = Optional.absent();
       executorOverhead = ResourceSlot.NONE;
       globalContainerMounts = ImmutableList.of();
+    }
+
+    public Builder setExecutorName(String executorPath) {
+      this.executorName = executorPath;
+      return this;
     }
 
     public Builder setExecutorPath(String executorPath) {
@@ -125,6 +139,7 @@ public final class ExecutorSettings {
 
     public ExecutorSettings build() {
       return new ExecutorSettings(
+          executorName,
           executorPath,
           executorResources,
           thermosObserverRoot,
