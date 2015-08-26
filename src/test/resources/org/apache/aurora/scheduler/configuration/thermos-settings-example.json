@@ -2,10 +2,14 @@
   "name": "executor1",
   "path": "/example/path/to/example_executor1.pex",
   "resources": [
+    "/path/to/fake/resource",
+    "/path/to/some/fake/resource"
   ],
   "thermosObserverRoot":"/var/run/example",
   "flags": "-test",
   "globalContainerMounts": [
+    "test:container:ro",
+    "test2:container2:rw"
   ],
   "overhead": {
     "numCpus": 0.25,

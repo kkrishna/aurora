@@ -34,7 +34,9 @@ import com.google.gson.JsonParseException;
 import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
 
+import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
+import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
 public final class ExecutorSettingsLoader {
@@ -57,12 +59,13 @@ public final class ExecutorSettingsLoader {
     try (Reader reader = configFileSource.openBufferedStream()) {
       Gson gson = new GsonBuilder()
           .registerTypeAdapter(ResourceSlot.class, new ResourceSlotDeserializer())
-          .registerTypeAdapter(Optional.class, new FlagsDeserializer()).create();
+          .registerTypeAdapter(Optional.class, new FlagsDeserializer())
+          .registerTypeAdapter(Volume.class, new VolumeDeserializer()).create();
 
       executorSettings = gson.fromJson(reader, ExecutorSettings.class);
 
     } catch (JsonParseException e) {
-      throw new ExecutorSettingsConfigException("Error parsing JSON\n" + e, e);
+      throw new ExecutorSettingsConfigException("Error parsing JSON config\n" + e, e);
     } catch (IOException e) {
       throw new ExecutorSettingsConfigException("IO Error\n" + e, e);
     }
@@ -106,6 +109,23 @@ public final class ExecutorSettingsLoader {
         throws JsonParseException {
 
       return Optional.<String>of(json.getAsString());
+    }
+  }
+
+  static class VolumeDeserializer implements JsonDeserializer<Volume> {
+
+    @Override
+    public Volume deserialize(
+        JsonElement json,
+        Type typeOfT,
+        JsonDeserializationContext context)
+        throws JsonParseException {
+      VolumeParser volParser = new VolumeParser();
+      try {
+        return volParser.doParse(json.getAsString());
+      } catch (IllegalArgumentException e) {
+        throw new JsonParseException("Failed to parse mount \"" + json.getAsString() + "\"", e);
+      }
     }
   }
 }
