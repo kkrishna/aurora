@@ -1,5 +1,5 @@
 {
-  "name": "executor1",
+  "name": "AuroraExecutor",
   "path": "/example/path/to/example_executor1.pex",
   "resources": [
     "/path/to/fake/resource",
