@@ -31,9 +31,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
-import com.twitter.common.quantity.Amount;
-import com.twitter.common.quantity.Data;
-
+import org.apache.aurora.common.quantity.Amount;
+import org.apache.aurora.common.quantity.Data;
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.app.VolumeParser;
