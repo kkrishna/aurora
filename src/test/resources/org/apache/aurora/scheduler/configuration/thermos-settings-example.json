@@ -1,0 +1,16 @@
+{
+  "name": "executor1",
+  "path": "/example/path/to/example_executor1.pex",
+  "resources": [
+  ],
+  "thermosObserverRoot":"/var/run/example",
+  "flags": "-test",
+  "globalContainerMounts": [
+  ],
+  "overhead": {
+    "numCpus": 0.25,
+    "ramMB": 128,
+    "diskMB": 0,
+    "numPorts": 0
+  }
+}

@@ -14,6 +14,7 @@
 package org.apache.aurora.scheduler.mesos;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -31,7 +32,7 @@ public final class ExecutorSettings {
   @SerializedName("name") private final String executorName;
   @SerializedName("path") private final String executorPath;
   @SerializedName("resources") private final List<String> executorResources;
-  @SerializedName("flags" ) private final Optional<String> executorFlags;
+  @SerializedName("flags") private final Optional<String> executorFlags;
   @SerializedName("overhead") private final ResourceSlot executorOverhead;
   private final List<Volume> globalContainerMounts;
   private final String thermosObserverRoot;
@@ -45,7 +46,7 @@ public final class ExecutorSettings {
       ResourceSlot executorOverhead,
       List<Volume> globalContainerMounts) {
 
-    this.executorName = requireNonNull(executorName);
+    this.executorName = executorName;
     this.executorPath = requireNonNull(executorPath);
     this.executorResources = requireNonNull(executorResources);
     this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
@@ -86,6 +87,38 @@ public final class ExecutorSettings {
     return new Builder();
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        executorName,
+        executorPath,
+        executorResources,
+        thermosObserverRoot,
+        executorPath,
+        executorOverhead,
+        globalContainerMounts);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
+
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+
+    final ExecutorSettings that = (ExecutorSettings) obj;
+
+    return Objects.equals(this.executorName, that.executorName)
+        && Objects.equals(this.executorPath, that.executorPath)
+        && Objects.equals(this.executorResources, that.executorResources)
+        && Objects.equals(this.thermosObserverRoot, that.thermosObserverRoot)
+        && Objects.equals(this.executorOverhead, that.executorOverhead)
+        && Objects.equals(this.globalContainerMounts, that.globalContainerMounts);
+  }
+
   public static final class Builder {
     private String executorName;
     private String executorPath;
@@ -102,8 +135,8 @@ public final class ExecutorSettings {
       globalContainerMounts = ImmutableList.of();
     }
 
-    public Builder setExecutorName(String executorPath) {
-      this.executorName = executorPath;
+    public Builder setExecutorName(String executorName) {
+      this.executorName = executorName;
       return this;
     }
 

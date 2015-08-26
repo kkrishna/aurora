@@ -11,21 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.aurora.scheduler.configuration;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
+import java.io.IOException;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.base.Optional;
+import com.google.common.io.CharSource;
+import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -34,63 +31,60 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
-import com.google.gson.reflect.TypeToken;
-
 import com.twitter.common.quantity.Amount;
 import com.twitter.common.quantity.Data;
 
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
-/**
- * Executor configuration file loader.
- */
 public final class ExecutorSettingsLoader {
-  /**
-   * No instances of this class should exist.
-   */
   private ExecutorSettingsLoader()  {
+    // Utility class
   }
 
-  /**
-   * Exception class to cluster all errors that reading the config file
-   * could generate into a general config file parsing error.
-   */
   public static class ExecutorSettingsConfigException extends Exception {
     public ExecutorSettingsConfigException(String message, Throwable cause) {
       super(message, cause);
     }
   }
 
-  /**
-   * Executor settings map loader to be called whenever Map needs to be generated from
-   * the JSON config file.
-   */
-  public static ImmutableSet<ExecutorSettings> load(File configFile)
+  public static ExecutorSettings load(File configFile)
       throws ExecutorSettingsConfigException {
 
-    Set<ExecutorSettings> executors = new HashSet<ExecutorSettings>();
+    CharSource configFileSource = Files.asCharSource(configFile, StandardCharsets.UTF_8);
+    ExecutorSettings executorSettings;
 
-    try {
-      Reader fileReader = new InputStreamReader(new FileInputStream(configFile), "UTF8");
-      Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    try (Reader reader = configFileSource.openBufferedStream()) {
+      Gson gson = new GsonBuilder()
+          .registerTypeAdapter(ResourceSlot.class, new ResourceSlotDeserializer())
+          .registerTypeAdapter(Optional.class, new FlagsDeserializer()).create();
 
-    } catch (FileNotFoundException e) {
-    } catch (UnsupportedEncodingException e) {
-      throw new ExecutorSettingsConfigException("Config file needs to be in UTF8 format", e);
+      executorSettings = gson.fromJson(reader, ExecutorSettings.class);
+
     } catch (JsonParseException e) {
-      throw new ExecutorSettingsConfigException("Error parsing JSON", e);
-    } catch (NullPointerException e) {
-      throw new ExecutorSettingsConfigException("A required parameter is missing", e);
+      throw new ExecutorSettingsConfigException("Error parsing JSON\n" + e, e);
+    } catch (IOException e) {
+      throw new ExecutorSettingsConfigException("IO Error\n" + e, e);
     }
 
-    return ImmutableSet.<ExecutorSettings>copyOf(executors);
+    //GSON bypasses constraint checks by using reflection, build new object to enforce constraints
+    return ExecutorSettings.newBuilder()
+        .setExecutorName(executorSettings.getExecutorName())
+        .setExecutorPath(executorSettings.getExecutorPath())
+        .setExecutorResources(executorSettings.getExecutorResources())
+        .setThermosObserverRoot(executorSettings.getThermosObserverRoot())
+        .setExecutorFlags(executorSettings.getExecutorFlags())
+        .setExecutorOverhead(executorSettings.getExecutorOverhead())
+        .setGlobalContainerMounts(executorSettings.getGlobalContainerMounts()).build();
   }
 
   static class ResourceSlotDeserializer implements JsonDeserializer<ResourceSlot> {
 
     @Override
-    public ResourceSlot deserialize(JsonElement json, Type typeofT, JsonDeserializationContext context)
+    public ResourceSlot deserialize(
+        JsonElement json,
+        Type typeOfT,
+        JsonDeserializationContext context)
         throws JsonParseException {
 
       JsonObject jsonObj = (JsonObject) json;
@@ -99,6 +93,19 @@ public final class ExecutorSettingsLoader {
           Amount.of(jsonObj.get("ramMB").getAsLong(), Data.MB),
           Amount.of(jsonObj.get("diskMB").getAsLong(), Data.MB),
           jsonObj.get("numPorts").getAsInt());
+    }
+  }
+
+  static class FlagsDeserializer implements JsonDeserializer<Optional<String>> {
+
+    @Override
+    public Optional<String> deserialize(
+        JsonElement json,
+        Type typeOfT,
+        JsonDeserializationContext context)
+        throws JsonParseException {
+
+      return Optional.<String>of(json.getAsString());
     }
   }
 }
