@@ -17,9 +17,9 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.twitter.common.collections.Pair;
-import com.twitter.common.quantity.Amount;
 
+import org.apache.aurora.common.collections.Pair;
+import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.scheduler.Resources.InsufficientResourcesException;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.Resource;
@@ -27,14 +27,14 @@ import org.apache.mesos.Protos.Value.Range;
 import org.apache.mesos.Protos.Value.Ranges;
 import org.junit.Test;
 
-import static com.twitter.common.quantity.Data.MB;
+import static org.apache.aurora.common.quantity.Data.MB;
 
+import static org.apache.aurora.scheduler.ResourceSlot.makeMesosResource;
 import static org.apache.aurora.scheduler.ResourceType.CPUS;
 import static org.apache.aurora.scheduler.ResourceType.DISK_MB;
 import static org.apache.aurora.scheduler.ResourceType.PORTS;
 import static org.apache.aurora.scheduler.ResourceType.RAM_MB;
 import static org.apache.mesos.Protos.Value.Type.RANGES;
-import static org.apache.mesos.Protos.Value.Type.SCALAR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -93,9 +93,9 @@ public class ResourcesTest {
   @Test
   public void testGetSlot() {
     ImmutableList<Resource> resources = ImmutableList.<Resource>builder()
-        .add(createCpuResource(8.0, false))
-        .add(createMemResource(1024, RAM_MB))
-        .add(createMemResource(2048, DISK_MB))
+        .add(makeMesosResource(CPUS, 8.0, false))
+        .add(makeMesosResource(RAM_MB, 1024, false))
+        .add(makeMesosResource(DISK_MB, 2048, false))
         .add(createPortRange(Pair.of(1, 10)))
         .build();
 
@@ -112,8 +112,8 @@ public class ResourcesTest {
   @Test
   public void testFilter() {
     ImmutableList<Resource> resources = ImmutableList.<Resource>builder()
-        .add(createCpuResource(8.0, true))
-        .add(createMemResource(1024, RAM_MB))
+        .add(makeMesosResource(CPUS, 8.0, true))
+        .add(makeMesosResource(RAM_MB, 1024, false))
         .build();
 
     assertEquals(
@@ -124,9 +124,9 @@ public class ResourcesTest {
   @Test
   public void testFilterByTier() {
     ImmutableList<Resource> resources = ImmutableList.<Resource>builder()
-        .add(createCpuResource(8.0, true))
-        .add(createCpuResource(8.0, false))
-        .add(createMemResource(1024, RAM_MB))
+        .add(makeMesosResource(CPUS, 8.0, true))
+        .add(makeMesosResource(CPUS, 8.0, false))
+        .add(makeMesosResource(RAM_MB, 1024, false))
         .build();
 
     assertEquals(
@@ -157,27 +157,6 @@ public class ResourcesTest {
         .setName(PORTS.getName())
         .setType(RANGES)
         .setRanges(ranges)
-        .build();
-  }
-
-  private static Resource createCpuResource(double cpus, boolean revocable) {
-    Protos.Resource.Builder builder = Resource.newBuilder()
-        .setName(CPUS.getName())
-        .setType(SCALAR)
-        .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpus));
-
-    if (revocable) {
-      builder.setRevocable(Resource.RevocableInfo.newBuilder().build());
-    }
-
-    return builder.build();
-  }
-
-  private static Resource createMemResource(long mem, ResourceType resourceType) {
-    return Resource.newBuilder()
-        .setName(resourceType.getName())
-        .setType(SCALAR)
-        .setScalar(Protos.Value.Scalar.newBuilder().setValue(mem))
         .build();
   }
 

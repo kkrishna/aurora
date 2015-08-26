@@ -22,10 +22,10 @@ import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.twitter.common.quantity.Amount;
-import com.twitter.common.quantity.Data;
-import com.twitter.common.testing.easymock.EasyMockTest;
 
+import org.apache.aurora.common.quantity.Amount;
+import org.apache.aurora.common.quantity.Data;
+import org.apache.aurora.common.testing.easymock.EasyMockTest;
 import org.apache.aurora.gen.AssignedTask;
 import org.apache.aurora.gen.Attribute;
 import org.apache.aurora.gen.Constraint;
@@ -503,7 +503,8 @@ public class PreemptionVictimFilterTest extends EasyMockTest {
       int numPorts,
       boolean revocable) {
 
-    List<Resource> resources = new ResourceSlot(cpu, ram, disk, numPorts).toResourceList();
+    List<Resource> resources =
+        new ResourceSlot(cpu, ram, disk, numPorts).toResourceList(new TierInfo(false));
     if (revocable) {
       resources = ImmutableList.<Resource>builder()
           .addAll(FluentIterable.from(resources)
