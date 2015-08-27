@@ -230,7 +230,7 @@ public class StatusUpdateBenchmark {
             bind(Clock.class).toInstance(new FakeClock());
             bind(ExecutorSettings.class)
                 .toInstance(ExecutorSettings.newBuilder()
-                    .setExecutorPath("/executor/thermos")
+                    .setExecutorCommand("/executor/thermos")
                     .setThermosObserverRoot("/var/run/thermos")
                     .build());
             bind(StatsProvider.class).toInstance(new FakeStatsProvider());

@@ -100,17 +100,15 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
       .addAllResources(RESOURCES_EPSILON.toResourceList(DEFAULT_TIER))
       .setCommand(CommandInfo.newBuilder()
           .setValue("./executor.pex")
-          .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
-              .setExecutable(true)))
-      .build();
+          .addAllUris(NO_OVERHEAD_EXECUTOR.getExecutorResources()))
+          .build();
 
   private static final ExecutorInfo EXECUTOR_WITH_WRAPPER =
       ExecutorInfo.newBuilder(DEFAULT_EXECUTOR)
           .setCommand(CommandInfo.newBuilder()
               .setValue("./executor_wrapper.sh")
-              .addUris(URI.newBuilder().setValue(NO_OVERHEAD_EXECUTOR.getExecutorPath())
-                  .setExecutable(true))
-              .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true)))
+              .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true))
+              .addAllUris(NO_OVERHEAD_EXECUTOR.getExecutorResources()))
           .build();
 
   @Before
@@ -242,7 +240,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
     control.replay();
 
     ExecutorSettings.newBuilder()
-        .setExecutorPath(null)
+        .setExecutorCommand(null)
         .setThermosObserverRoot("")
         .build();
   }
@@ -250,8 +248,8 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   @Test
   public void testExecutorAndWrapper() {
     config = ExecutorSettings.newBuilder()
-        .setExecutorPath(EXECUTOR_WRAPPER_PATH)
-        .setExecutorResources(ImmutableList.of(SOME_OVERHEAD_EXECUTOR.getExecutorPath()))
+        .setExecutorCommand(ImmutableList.of(EXECUTOR_WRAPPER_PATH))
+        .setExecutorResources(ImmutableList.copyOf(SOME_OVERHEAD_EXECUTOR.getExecutorResources()))
         .setThermosObserverRoot("/var/run/thermos")
         .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
         .build();
@@ -267,8 +265,8 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   @Test
   public void testGlobalMounts() {
     config = ExecutorSettings.newBuilder()
-        .setExecutorPath(EXECUTOR_WRAPPER_PATH)
-        .setExecutorResources(ImmutableList.of(SOME_OVERHEAD_EXECUTOR.getExecutorPath()))
+        .setExecutorCommand(ImmutableList.of(EXECUTOR_WRAPPER_PATH))
+        .setExecutorResources(ImmutableList.copyOf(SOME_OVERHEAD_EXECUTOR.getExecutorResources()))
         .setThermosObserverRoot("/var/run/thermos")
         .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
         .setGlobalContainerMounts(ImmutableList.of(new Volume("/container", "/host", Mode.RO)))

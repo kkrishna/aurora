@@ -204,7 +204,7 @@ public class SchedulerIT extends BaseZooKeeperTest {
             0);
         bind(ExecutorSettings.class)
             .toInstance(ExecutorSettings.newBuilder()
-                .setExecutorPath("/executor/thermos")
+                .setExecutorCommand(ImmutableList.of("/executor/thermos"))
                 .setThermosObserverRoot("/var/run/thermos")
                 .setExecutorOverhead(executorOverhead)
                 .build());

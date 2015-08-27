@@ -150,7 +150,7 @@ public class SchedulingBenchmarks {
               bind(SchedulingFilterImpl.class).in(Singleton.class);
               bind(ExecutorSettings.class)
                   .toInstance(ExecutorSettings.newBuilder()
-                      .setExecutorPath("/executor/thermos")
+                      .setExecutorCommand("/executor/thermos")
                       .setThermosObserverRoot("/var/run/thermos")
                       .build());
 

@@ -1,10 +1,20 @@
 {
   "name": "AuroraExecutor",
-  "path": "/home/vagrant/aurora/dist/thermos_executor.pex",
-  "resources": [
+  "command": [
+    "thermos_executor.pex",
+    "--announcer-enable",
+    "--anouncer-ensemble",
+    "localhost:2181"
   ],
-  "thermosObserverRoot":"/var/run/thermos",
-  "flags": "--announcer-enable --announcer-ensemble localhost:2181",
+  "resources": [
+    {
+      "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
+      "executable": true,
+      "extract": true,
+      "cache": true
+    }
+  ],
+  "thermosObserverRoot": "/var/run/thermos",
   "globalContainerMounts": [
   ],
   "overhead": {

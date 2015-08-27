@@ -72,10 +72,9 @@ public final class ExecutorSettingsLoader {
     //GSON bypasses constraint checks by using reflection, build new object to enforce constraints
     return ExecutorSettings.newBuilder()
         .setExecutorName(executorSettings.getExecutorName())
-        .setExecutorPath(executorSettings.getExecutorPath())
+        .setExecutorCommand(executorSettings.getExecutorCommand())
         .setExecutorResources(executorSettings.getExecutorResources())
         .setThermosObserverRoot(executorSettings.getThermosObserverRoot())
-        .setExecutorFlags(executorSettings.getExecutorFlags())
         .setExecutorOverhead(executorSettings.getExecutorOverhead())
         .setGlobalContainerMounts(executorSettings.getGlobalContainerMounts()).build();
   }

@@ -59,20 +59,8 @@ public final class CommandUtil {
   }
 
   /**
-   * Creates a description of a command that will fetch and execute the given URI to an executor
-   * binary.
    *
-   * @param executorUri A URI to the executor
-   * @param executorResources A list of URIs to be fetched into the sandbox with the executor.
-   * @return A populated CommandInfo with correct resources set and command set.
    */
-  public static CommandInfo create(String executorUri, List<String> executorResources) {
-    return create(
-        executorUri,
-        executorResources,
-        "./",
-        Optional.absent()).build();
-  }
 
   /**
    * Creates a description of a command that will fetch and execute the given URI to an executor
@@ -80,27 +68,38 @@ public final class CommandUtil {
    *
    * @param executorUri A URI to the executor
    * @param executorResources A list of URIs to be fetched into the sandbox with the executor.
+   * @return A populated CommandInfo with correct resources set and command set.
+   */
+  public static CommandInfo create(List<String> executorUri, List<URI> executorResources) {
+    return create(
+        executorUri,
+        executorResources,
+        "./").build();
+  }
+
+  /**
+   * Creates a description of a command that will fetch and execute the given URI to an executor
+   * binary.
+   *
+   * @param executorCommand A list of strings that form the command to be executed and it's arguments.
+   * @param executorResources A list of URIs to be fetched into the sandbox with the executor.
    * @param commandBasePath The relative base path of the executor.
-   * @param extraArguments Extra command line arguments to add to the generated command.
    * @return A CommandInfo.Builder populated with resources and a command.
    */
   public static CommandInfo.Builder create(
-      String executorUri,
-      List<String> executorResources,
-      String commandBasePath,
-      Optional<String> extraArguments) {
+      List<String> executorCommand,
+      List<URI> executorResources,
+      String commandBasePath) {
 
+    String cmdLine = String.join(" ", executorCommand);
     Preconditions.checkNotNull(executorResources);
-    MorePreconditions.checkNotBlank(executorUri);
+    MorePreconditions.checkNotBlank(cmdLine);
     MorePreconditions.checkNotBlank(commandBasePath);
     CommandInfo.Builder builder = CommandInfo.newBuilder();
 
-    builder.addAllUris(Iterables.transform(executorResources, STRING_TO_URI_RESOURCE));
-    builder.addUris(STRING_TO_URI_RESOURCE.apply(executorUri));
+    builder.addAllUris(executorResources);
 
-    String cmdLine = commandBasePath
-        + uriBasename(executorUri)
-        + " " + extraArguments.or("");
+    cmdLine = commandBasePath + cmdLine;
     return builder.setValue(cmdLine.trim());
   }
 }

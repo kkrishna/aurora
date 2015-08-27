@@ -13,10 +13,16 @@
  */
 package org.apache.aurora.scheduler.mesos;
 
+import com.google.common.collect.ImmutableList;
+
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
 
 import org.apache.aurora.scheduler.ResourceSlot;
+import org.apache.mesos.Protos.CommandInfo.URI;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Utility class to contain constants related to setting up executor settings.
@@ -27,17 +33,21 @@ public final class TaskExecutors {
     // Utility class.
   }
 
-  private static final String EXECUTOR_PATH = "/fake/executor.pex";
+  private static final List<String> EXECUTOR_COMMAND = ImmutableList.of("./executor.pex");
+  private static final List<URI> EXECUTOR_RESOURCES = ImmutableList.of(
+      URI.newBuilder().setValue("/fake/executor.pex").setExecutable(true).build());
 
   public static final ExecutorSettings NO_OVERHEAD_EXECUTOR =
       ExecutorSettings.newBuilder()
-          .setExecutorPath(EXECUTOR_PATH)
+          .setExecutorCommand(EXECUTOR_COMMAND)
+          .setExecutorResources(EXECUTOR_RESOURCES)
           .setThermosObserverRoot("/var/run/thermos")
           .build();
 
   public static final ExecutorSettings SOME_OVERHEAD_EXECUTOR =
       ExecutorSettings.newBuilder()
-          .setExecutorPath(EXECUTOR_PATH)
+          .setExecutorCommand(EXECUTOR_COMMAND)
+          .setExecutorResources(EXECUTOR_RESOURCES)
           .setThermosObserverRoot("/var/run/thermos")
           .setExecutorOverhead(
               new ResourceSlot(0.01, Amount.of(256L, Data.MB), Amount.of(0L, Data.MB), 0))
