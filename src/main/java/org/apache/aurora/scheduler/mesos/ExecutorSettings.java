@@ -17,12 +17,14 @@ import java.util.List;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.mesos.Protos.CommandInfo.URI;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -33,6 +35,7 @@ public final class ExecutorSettings {
   @SerializedName("command") private final List<String> executorCommand;
   @SerializedName("resources") private final List<URI> executorResources;
   @SerializedName("overhead") private final ResourceSlot executorOverhead;
+  @SerializedName("custom")private final JsonObject customSchema;
   private final List<Volume> globalContainerMounts;
   private final String thermosObserverRoot;
 
@@ -42,7 +45,8 @@ public final class ExecutorSettings {
       List<URI> executorResources,
       String thermosObserverRoot,
       ResourceSlot executorOverhead,
-      List<Volume> globalContainerMounts) {
+      List<Volume> globalContainerMounts,
+      JsonObject customSchema) {
 
     this.executorName = executorName;
     this.executorCommand = requireNonNull(executorCommand);
@@ -50,6 +54,7 @@ public final class ExecutorSettings {
     this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
+    this.customSchema = customSchema;
   }
 
   public String getExecutorName() {
@@ -76,6 +81,10 @@ public final class ExecutorSettings {
     return globalContainerMounts;
   }
 
+  public JsonObject getCustomSchema() {
+    return customSchema;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -89,7 +98,8 @@ public final class ExecutorSettings {
         thermosObserverRoot,
         executorCommand,
         executorOverhead,
-        globalContainerMounts);
+        globalContainerMounts,
+        customSchema);
   }
 
   @Override
@@ -109,7 +119,8 @@ public final class ExecutorSettings {
         && Objects.equals(executorResources, that.executorResources)
         && Objects.equals(thermosObserverRoot, that.thermosObserverRoot)
         && Objects.equals(executorOverhead, that.executorOverhead)
-        && Objects.equals(globalContainerMounts, that.globalContainerMounts);
+        && Objects.equals(globalContainerMounts, that.globalContainerMounts)
+        && Objects.equals(customSchema, that.customSchema);
   }
 
   public static final class Builder {
@@ -119,6 +130,7 @@ public final class ExecutorSettings {
     private String thermosObserverRoot;
     private ResourceSlot executorOverhead;
     private List<Volume> globalContainerMounts;
+    private JsonObject customSchema;
 
     Builder() {
       executorResources = ImmutableList.of();
@@ -152,7 +164,14 @@ public final class ExecutorSettings {
     }
 
     public Builder setGlobalContainerMounts(List<Volume> globalContainerMounts) {
-      this.globalContainerMounts = globalContainerMounts;
+      if(nonNull(globalContainerMounts)) {
+        this.globalContainerMounts = globalContainerMounts;
+      }
+      return this;
+    }
+
+    public Builder setCustomSchema(JsonObject customSchema) {
+      this.customSchema = customSchema;
       return this;
     }
 
@@ -163,7 +182,8 @@ public final class ExecutorSettings {
           executorResources,
           thermosObserverRoot,
           executorOverhead,
-          globalContainerMounts);
+          globalContainerMounts,
+          customSchema);
     }
   }
 }

@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Optional;
 
 import com.google.common.io.CharSource;
@@ -72,14 +71,16 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorSettingsConfigException("IO Error\n" + e, e);
     }
 
-    //GSON bypasses constraint checks by using reflection, build new object to enforce constraints
+    //GSON bypasses constraint checks by using reflection, build new object to enforce constraints,
+    // builder will also provide default vaules for empt
     return ExecutorSettings.newBuilder()
         .setExecutorName(executorSettings.getExecutorName())
         .setExecutorCommand(executorSettings.getExecutorCommand())
         .setExecutorResources(executorSettings.getExecutorResources())
         .setThermosObserverRoot(executorSettings.getThermosObserverRoot())
         .setExecutorOverhead(executorSettings.getExecutorOverhead())
-        .setGlobalContainerMounts(executorSettings.getGlobalContainerMounts()).build();
+        .setGlobalContainerMounts(executorSettings.getGlobalContainerMounts())
+        .setCustomSchema(executorSettings.getCustomSchema()).build();
   }
 
   static class ResourceSlotDeserializer implements JsonDeserializer<ResourceSlot> {
@@ -141,6 +142,7 @@ public final class ExecutorSettingsLoader {
 
       URI.Builder builder = URI.newBuilder().setValue(jsonObj.get("value").getAsString());
 
+      //TODO(rdelvalle): Figure out if there's a better pattern for doing this
       if(jsonObj.has("executable")) {
         builder.setExecutable(jsonObj.get("executable").getAsBoolean());
       }
