@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import com.google.common.base.Optional;
 import com.google.common.io.CharSource;
@@ -37,6 +38,8 @@ import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
+import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.CommandInfo.URI;
 
 public final class ExecutorSettingsLoader {
   private ExecutorSettingsLoader()  {
@@ -59,7 +62,8 @@ public final class ExecutorSettingsLoader {
       Gson gson = new GsonBuilder()
           .registerTypeAdapter(ResourceSlot.class, new ResourceSlotDeserializer())
           .registerTypeAdapter(Optional.class, new FlagsDeserializer())
-          .registerTypeAdapter(Volume.class, new VolumeDeserializer()).create();
+          .registerTypeAdapter(Volume.class, new VolumeDeserializer())
+          .registerTypeAdapter(URI.class, new URIDeserializer()).create();
 
       executorSettings = gson.fromJson(reader, ExecutorSettings.class);
 
@@ -109,7 +113,6 @@ public final class ExecutorSettingsLoader {
       return Optional.<String>of(json.getAsString());
     }
   }
-
   static class VolumeDeserializer implements JsonDeserializer<Volume> {
 
     @Override
@@ -124,6 +127,24 @@ public final class ExecutorSettingsLoader {
       } catch (IllegalArgumentException e) {
         throw new JsonParseException("Failed to parse mount \"" + json.getAsString() + "\"", e);
       }
+    }
+  }
+
+  static class URIDeserializer implements JsonDeserializer<URI> {
+
+    @Override
+    public URI deserialize(
+        JsonElement json,
+        Type typeOfT,
+        JsonDeserializationContext context)
+        throws JsonParseException {
+      JsonObject jsonObj = (JsonObject) json;
+
+      return URI.newBuilder()
+          .setValue(jsonObj.get("value").getAsString())
+          .setExecutable(jsonObj.get("executable").getAsBoolean())
+          .setExtract(jsonObj.get("extract").getAsBoolean())
+          .setCache(jsonObj.get("cache").getAsBoolean()).build();
     }
   }
 }
