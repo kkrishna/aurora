@@ -20,8 +20,8 @@ import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 
-import com.google.common.base.Optional;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
@@ -38,7 +38,6 @@ import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
-import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.CommandInfo.URI;
 
 public final class ExecutorSettingsLoader {
@@ -140,16 +139,21 @@ public final class ExecutorSettingsLoader {
         throws JsonParseException {
       JsonObject jsonObj = (JsonObject) json;
 
-      String value;
-      boolean executable;
-      boolean extract;
-      boolean cache;
+      URI.Builder builder = URI.newBuilder().setValue(jsonObj.get("value").getAsString());
 
-      return URI.newBuilder()
-          .setValue(jsonObj.get("value").getAsString())
-          .setExecutable(jsonObj.get("executable").getAsBoolean())
-          .setExtract(jsonObj.get("extract").getAsBoolean())
-          .setCache(jsonObj.get("cache").getAsBoolean()).build();
+      if(jsonObj.has("executable")) {
+        builder.setExecutable(jsonObj.get("executable").getAsBoolean());
+      }
+
+      if(jsonObj.has("extract")) {
+        builder.setExtract(jsonObj.get("extract").getAsBoolean());
+      }
+
+      if(jsonObj.has("cache")) {
+        builder.setCache(jsonObj.get("cache").getAsBoolean());
+      }
+
+      return builder.build();
     }
   }
 }
