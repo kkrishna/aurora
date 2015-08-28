@@ -25,6 +25,7 @@ public class ExecutorSettingsLoaderTest {
   private static final String THERMOS_EXAMPLE_RESOURCE = "thermos-settings-example.json";
   private static final String  THERMOS_NO_OBSERVER_RESOURCE
       = "executor-settings-thermos-no-observer.json";
+  private static final String NO_VALUE_URI = "no-value-URI.json";
   private static final String NONEXISTENT_RESOURCE = "executor-settings-nonexistent.json";
 
   @Test
@@ -40,6 +41,13 @@ public class ExecutorSettingsLoaderTest {
       throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
     ExecutorSettingsLoader.load(
         new File(getClass().getResource(THERMOS_NO_OBSERVER_RESOURCE).getFile()));
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testThermosNoValueURI()
+      throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+    ExecutorSettingsLoader.load(
+        new File(getClass().getResource(NO_VALUE_URI).getFile()));
   }
 
   @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)
