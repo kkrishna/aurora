@@ -109,7 +109,6 @@ public final class CommandUtil {
     builder.addAllUris(executorResources);
 
     cmdLine = commandBasePath + cmdLine;
-    System.out.println("MARKERMAKER: " + cmdLine.trim());
     return builder.setValue(cmdLine.trim());
   }
 }

@@ -140,6 +140,11 @@ public final class ExecutorSettingsLoader {
         throws JsonParseException {
       JsonObject jsonObj = (JsonObject) json;
 
+      String value;
+      boolean executable;
+      boolean extract;
+      boolean cache;
+
       return URI.newBuilder()
           .setValue(jsonObj.get("value").getAsString())
           .setExecutable(jsonObj.get("executable").getAsBoolean())
