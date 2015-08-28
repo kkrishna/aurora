@@ -13,7 +13,6 @@
  */
 package org.apache.aurora.scheduler.base;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.TextFormat;
 
@@ -25,8 +24,9 @@ import static org.junit.Assert.assertEquals;
 
 public class CommandUtilTest {
 
-  private static final Optional<String> NO_EXTRA_ARGS = Optional.absent();
   private static final ImmutableList<URI> NO_RESOURCES = ImmutableList.of();
+  private static final URI TEST_EXECUTOR_URI = URI.newBuilder().setValue("test/executor").build();
+  private static final URI WRAPPER_URI = URI.newBuilder().setValue("test/wrapper").build();
   private static final String PATH = "./";
 
   @Test
@@ -39,7 +39,10 @@ public class CommandUtilTest {
   @Test
   public void testExecutorOnlyCommand() {
     CommandInfo cmd =
-        CommandUtil.create(ImmutableList.of("test/executor"), NO_RESOURCES, PATH).build();
+        CommandUtil.create(
+            ImmutableList.of("executor"),
+            ImmutableList.of(TEST_EXECUTOR_URI),
+            PATH).build();
     assertEquals("./executor", cmd.getValue());
     assertEquals("test/executor", cmd.getUris(0).getValue());
   }
@@ -47,14 +50,12 @@ public class CommandUtilTest {
   @Test
   public void testWrapperAndExecutorCommand() {
     CommandInfo cmd = CommandUtil.create(
-        ImmutableList.of("./wrapper"),
-        ImmutableList.of(
-            URI.newBuilder().setValue("test/wrapper").build(),
-            URI.newBuilder().setValue("test/executor").build()),
+        ImmutableList.of("wrapper"),
+        ImmutableList.of(WRAPPER_URI, TEST_EXECUTOR_URI),
         PATH).build();
     assertEquals("./wrapper", cmd.getValue());
-    assertEquals("test/executor", cmd.getUris(0).getValue());
-    assertEquals("test/wrapper", cmd.getUris(1).getValue());
+    assertEquals("test/wrapper", cmd.getUris(0).getValue());
+    assertEquals("test/executor", cmd.getUris(1).getValue());
   }
 
   @Test(expected = NullPointerException.class)
@@ -64,7 +65,8 @@ public class CommandUtilTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void testBadUri() {
-    CommandUtil.create(ImmutableList.of("a/b/c/"), NO_RESOURCES, PATH);
+    CommandUtil.create(ImmutableList.of("a/b/c/"),
+        NO_RESOURCES, PATH);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -83,7 +85,9 @@ public class CommandUtilTest {
     String expectedValue = "uris { value: \"/usr/local/bin/test_executor\" "
         + "executable: true } value: \"./test_executor\"";
     CommandInfo actual = CommandUtil.create(
-        ImmutableList.of(uri), NO_RESOURCES, PATH).build();
+        ImmutableList.of("test_executor"),
+        ImmutableList.of(URI.newBuilder().setValue(uri).setExecutable(true).build()),
+        PATH).build();
 
     assertEquals(expectedValue, TextFormat.shortDebugString(actual));
   }
@@ -96,6 +100,8 @@ public class CommandUtilTest {
     assertEquals(
         expectedCommand,
         CommandUtil.create(
-            ImmutableList.of(uri), NO_RESOURCES, PATH).build());
+            ImmutableList.of(basename),
+            ImmutableList.of(URI.newBuilder().setValue(uri).setExecutable(true).build()),
+            PATH).build());
   }
 }

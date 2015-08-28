@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Singleton;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.EventBus;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -150,7 +151,7 @@ public class SchedulingBenchmarks {
               bind(SchedulingFilterImpl.class).in(Singleton.class);
               bind(ExecutorSettings.class)
                   .toInstance(ExecutorSettings.newBuilder()
-                      .setExecutorCommand("/executor/thermos")
+                      .setExecutorCommand(ImmutableList.of("/executor/thermos"))
                       .setThermosObserverRoot("/var/run/thermos")
                       .build());
 

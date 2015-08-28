@@ -15,10 +15,7 @@ package org.apache.aurora.scheduler.base;
 
 import java.util.List;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 
 import org.apache.aurora.common.base.MorePreconditions;
 import org.apache.mesos.Protos.CommandInfo;
@@ -28,13 +25,6 @@ import org.apache.mesos.Protos.CommandInfo.URI;
  * Utility class for constructing {@link CommandInfo} objects given an executor URI.
  */
 public final class CommandUtil {
-
-  private static final Function<String, URI> STRING_TO_URI_RESOURCE = new Function<String, URI>() {
-    @Override
-    public URI apply(String resource) {
-      return URI.newBuilder().setValue(resource).setExecutable(true).build();
-    }
-  };
 
   private CommandUtil() {
     // Utility class.
@@ -55,6 +45,16 @@ public final class CommandUtil {
       MorePreconditions.checkNotBlank(basename, "URI must not end with a slash.");
 
       return basename;
+    }
+  }
+
+  public static void backSlashTest(String uri) {
+    int lastSlash = uri.lastIndexOf('/');
+    if (lastSlash == -1) {
+      return;
+    } else {
+      String basename = uri.substring(lastSlash + 1);
+      MorePreconditions.checkNotBlank(basename, "URI must not end with a slash.");
     }
   }
 
@@ -81,7 +81,8 @@ public final class CommandUtil {
    * Creates a description of a command that will fetch and execute the given URI to an executor
    * binary.
    *
-   * @param executorCommand A list of strings that form the command to be executed and it's arguments.
+   * @param executorCommand A list of strings that form the command to be executed and it's
+   *                        arguments.
    * @param executorResources A list of URIs to be fetched into the sandbox with the executor.
    * @param commandBasePath The relative base path of the executor.
    * @return A CommandInfo.Builder populated with resources and a command.
@@ -90,6 +91,14 @@ public final class CommandUtil {
       List<String> executorCommand,
       List<URI> executorResources,
       String commandBasePath) {
+
+    // TODO(rdelvalle): Determine if this is really necessary or if it's worth getting rid of
+    // along with the test for it
+    backSlashTest(executorCommand.get(0));
+
+    for (URI uri : executorResources) {
+      backSlashTest(uri.getValue());
+    }
 
     String cmdLine = String.join(" ", executorCommand);
     Preconditions.checkNotNull(executorResources);
@@ -100,6 +109,7 @@ public final class CommandUtil {
     builder.addAllUris(executorResources);
 
     cmdLine = commandBasePath + cmdLine;
+    System.out.println("MARKERMAKER: " + cmdLine.trim());
     return builder.setValue(cmdLine.trim());
   }
 }

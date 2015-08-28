@@ -59,6 +59,10 @@ import static org.junit.Assert.assertTrue;
 public class MesosTaskFactoryImplTest extends EasyMockTest {
 
   private static final String EXECUTOR_WRAPPER_PATH = "/fake/executor_wrapper.sh";
+  private static final String EXECUTOR_WRAPPER_CMD = "executor_wrapper.sh";
+  private static final URI EXECUTOR_WRAPPER_URI = URI.newBuilder()
+      .setValue(EXECUTOR_WRAPPER_PATH)
+      .setExecutable(true).build();
   private static final ITaskConfig TASK_CONFIG = ITaskConfig.build(new TaskConfig()
       .setJob(new JobKey("role", "environment", "job-name"))
       .setOwner(new Identity("role", "user"))
@@ -107,8 +111,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
       ExecutorInfo.newBuilder(DEFAULT_EXECUTOR)
           .setCommand(CommandInfo.newBuilder()
               .setValue("./executor_wrapper.sh")
-              .addUris(URI.newBuilder().setValue(EXECUTOR_WRAPPER_PATH).setExecutable(true))
-              .addAllUris(NO_OVERHEAD_EXECUTOR.getExecutorResources()))
+              .addUris(EXECUTOR_WRAPPER_URI))
           .build();
 
   @Before
@@ -248,8 +251,8 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   @Test
   public void testExecutorAndWrapper() {
     config = ExecutorSettings.newBuilder()
-        .setExecutorCommand(ImmutableList.of(EXECUTOR_WRAPPER_PATH))
-        .setExecutorResources(ImmutableList.copyOf(SOME_OVERHEAD_EXECUTOR.getExecutorResources()))
+        .setExecutorCommand(ImmutableList.of(EXECUTOR_WRAPPER_CMD))
+        .setExecutorResources(ImmutableList.of(EXECUTOR_WRAPPER_URI))
         .setThermosObserverRoot("/var/run/thermos")
         .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
         .build();

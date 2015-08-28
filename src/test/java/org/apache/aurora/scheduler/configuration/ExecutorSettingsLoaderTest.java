@@ -31,6 +31,7 @@ public class ExecutorSettingsLoaderTest {
   public void parse() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
     ExecutorSettings test = ExecutorSettingsLoader.load(
         new File(getClass().getResource(THERMOS_EXAMPLE_RESOURCE).getFile()));
+
     assertNotNull(test);
   }
 

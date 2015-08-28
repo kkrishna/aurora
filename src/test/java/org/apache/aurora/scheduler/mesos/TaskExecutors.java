@@ -13,16 +13,14 @@
  */
 package org.apache.aurora.scheduler.mesos;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
-
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.mesos.Protos.CommandInfo.URI;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Utility class to contain constants related to setting up executor settings.
@@ -33,7 +31,7 @@ public final class TaskExecutors {
     // Utility class.
   }
 
-  private static final List<String> EXECUTOR_COMMAND = ImmutableList.of("./executor.pex");
+  private static final List<String> EXECUTOR_COMMAND = ImmutableList.of("executor.pex");
   private static final List<URI> EXECUTOR_RESOURCES = ImmutableList.of(
       URI.newBuilder().setValue("/fake/executor.pex").setExecutable(true).build());
 

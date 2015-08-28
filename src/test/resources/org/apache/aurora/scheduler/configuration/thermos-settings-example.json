@@ -3,15 +3,15 @@
   "command": [
     "thermos_executor.pex",
     "--announcer-enable",
-    "--anouncer-ensemble",
+    "--announcer-ensemble",
     "localhost:2181"
   ],
   "resources": [
     {
       "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
       "executable": true,
-      "extract": true,
-      "cache": true
+      "extract": false,
+      "cache": false
     }
   ],
   "thermosObserverRoot": "/var/run/thermos",

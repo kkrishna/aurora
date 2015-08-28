@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 import javax.inject.Singleton;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
@@ -230,7 +231,7 @@ public class StatusUpdateBenchmark {
             bind(Clock.class).toInstance(new FakeClock());
             bind(ExecutorSettings.class)
                 .toInstance(ExecutorSettings.newBuilder()
-                    .setExecutorCommand("/executor/thermos")
+                    .setExecutorCommand(ImmutableList.of("/executor/thermos"))
                     .setThermosObserverRoot("/var/run/thermos")
                     .build());
             bind(StatsProvider.class).toInstance(new FakeStatsProvider());

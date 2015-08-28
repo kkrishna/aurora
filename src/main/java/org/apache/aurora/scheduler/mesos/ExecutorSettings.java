@@ -16,7 +16,6 @@ package org.apache.aurora.scheduler.mesos;
 import java.util.List;
 import java.util.Objects;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.SerializedName;
 
@@ -68,7 +67,6 @@ public final class ExecutorSettings {
   public String getThermosObserverRoot() {
     return thermosObserverRoot;
   }
-
 
   public ResourceSlot getExecutorOverhead() {
     return executorOverhead;
