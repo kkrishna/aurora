@@ -24,20 +24,17 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 
 import org.apache.aurora.common.application.ShutdownRegistry;
-import org.junit.Test;
-
 import org.apache.aurora.common.application.modules.LifecycleModule.LaunchException;
 import org.apache.aurora.common.application.modules.LifecycleModule.ServiceRunner;
 import org.apache.aurora.common.application.modules.LocalServiceRegistry.LocalService;
 import org.apache.aurora.common.base.Command;
 import org.apache.aurora.common.testing.easymock.EasyMockTest;
+import org.junit.Test;
 
+import static org.apache.aurora.common.net.InetSocketAddressHelper.getLocalAddress;
 import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
-import static org.apache.aurora.common.application.modules.LifecycleModule.bindLocalService;
-import static org.apache.aurora.common.net.InetSocketAddressHelper.getLocalAddress;
 
 /**
  * @author William Farner
@@ -67,37 +64,11 @@ public class LifecycleModuleTest extends EasyMockTest {
   }
 
   @Test
-  public void testNoRunner() throws Exception {
-    final Command primaryShutdown = createMock(Command.class);
-    final Command auxShutdown = createMock(Command.class);
-
-    primaryShutdown.execute();
-    auxShutdown.execute();
-
-    Module testModule = new AbstractModule() {
-      @Override protected void configure() {
-        bindLocalService(binder(), LocalService.primaryService(99, primaryShutdown));
-        bindLocalService(binder(), LocalService.auxiliaryService("foo", 100, auxShutdown));
-      }
-    };
-
-    Injector injector = Guice.createInjector(new SystemModule(), testModule);
-    LocalServiceRegistry registry = injector.getInstance(LocalServiceRegistry.class);
-
-    control.replay();
-
-    assertEquals(Optional.of(getLocalAddress(99)), registry.getPrimarySocket());
-    assertEquals(ImmutableMap.of("foo", getLocalAddress(100)), registry.getAuxiliarySockets());
-
-    injector.getInstance(ShutdownRegistry.ShutdownRegistryImpl.class).execute();
-  }
-
-  @Test
   public void testOrdering() throws Exception {
     final ServiceRunner runner = createMock(ServiceRunner.class);
     Command shutdown = createMock(Command.class);
 
-    expect(runner.launch()).andReturn(LocalService.primaryService(100, shutdown));
+    expect(runner.launch()).andReturn(LocalService.auxiliaryService("a", 100, shutdown));
     shutdown.execute();
 
     Module testModule = new AbstractModule() {
@@ -111,7 +82,8 @@ public class LifecycleModuleTest extends EasyMockTest {
 
     control.replay();
 
-    assertEquals(Optional.of(getLocalAddress(100)), registry.getPrimarySocket());
+    assertEquals(Optional.<InetSocketAddress>absent(), registry.getPrimarySocket());
+    assertEquals(ImmutableMap.of("a", getLocalAddress(100)), registry.getAuxiliarySockets());
     injector.getInstance(ShutdownRegistry.ShutdownRegistryImpl.class).execute();
   }
 

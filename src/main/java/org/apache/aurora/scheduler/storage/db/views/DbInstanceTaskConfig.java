@@ -11,25 +11,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.aurora.common.base;
+package org.apache.aurora.scheduler.storage.db.views;
 
-/**
- * Utility functions for working with commands.
- *
- * @author John Sirois
- */
-public final class Commands {
+import java.util.Set;
 
-  /**
-   * A command that does nothing when executed.
-   */
-  public static final Command NOOP = new Command() {
-    @Override public void execute() {
-      // noop
-    }
-  };
+import org.apache.aurora.gen.InstanceTaskConfig;
+import org.apache.aurora.gen.Range;
 
-  private Commands() {
-    // utility
+public final class DbInstanceTaskConfig {
+  private DbTaskConfig task;
+  private Set<Range> instances;
+
+  private DbInstanceTaskConfig() {
+  }
+
+  InstanceTaskConfig toThrift() {
+    return new InstanceTaskConfig()
+        .setTask(task.toThrift())
+        .setInstances(instances);
   }
 }

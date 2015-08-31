@@ -11,25 +11,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.aurora.common.base;
+package org.apache.aurora.scheduler.storage.db.views;
 
-/**
- * Utility functions for working with commands.
- *
- * @author John Sirois
- */
-public final class Commands {
+import org.apache.aurora.gen.storage.StoredJobUpdateDetails;
 
-  /**
-   * A command that does nothing when executed.
-   */
-  public static final Command NOOP = new Command() {
-    @Override public void execute() {
-      // noop
-    }
-  };
+public final class DbStoredJobUpdateDetails {
+  private DbJobUpdateDetails details;
+  private String lockToken;
 
-  private Commands() {
-    // utility
+  private DbStoredJobUpdateDetails() {
+  }
+
+  public StoredJobUpdateDetails toThrift() {
+    return new StoredJobUpdateDetails()
+        .setDetails(details.toThrift())
+        .setLockToken(lockToken);
   }
 }

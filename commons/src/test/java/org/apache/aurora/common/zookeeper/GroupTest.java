@@ -16,6 +16,7 @@ package org.apache.aurora.common.zookeeper;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -25,7 +26,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.aurora.common.base.Command;
-import org.apache.aurora.common.base.Supplier;
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Time;
 import org.apache.aurora.common.testing.easymock.EasyMockTest;
@@ -36,7 +36,6 @@ import org.apache.aurora.common.zookeeper.Group.NodeScheme;
 import org.apache.aurora.common.zookeeper.ZooKeeperClient.Credentials;
 import org.apache.aurora.common.zookeeper.testing.BaseZooKeeperTest;
 
-import static com.google.common.testing.junit4.JUnitAsserts.assertNotEqual;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
@@ -44,6 +43,7 @@ import static org.easymock.EasyMock.reset;
 import static org.easymock.EasyMock.verify;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
 public class GroupTest extends BaseZooKeeperTest {
@@ -197,8 +197,8 @@ public class GroupTest extends BaseZooKeeperTest {
       members = listener.take();
     }
     assertEquals(1, Iterables.size(members));
-    assertNotEqual(originalMemberId, Iterables.getOnlyElement(members));
-    assertNotEqual(originalMemberId, membership.getMemberId());
+    assertNotEquals(originalMemberId, Iterables.getOnlyElement(members));
+    assertNotEquals(originalMemberId, membership.getMemberId());
 
     listener.assertEmpty();
 

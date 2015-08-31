@@ -18,21 +18,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
-import java.util.Set;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
-import org.apache.zookeeper.data.ACL;
-
-import org.apache.aurora.common.base.Function;
 import org.apache.aurora.common.base.MorePreconditions;
 import org.apache.aurora.common.io.Codec;
 import org.apache.aurora.common.thrift.Endpoint;
 import org.apache.aurora.common.thrift.ServiceInstance;
 import org.apache.aurora.common.thrift.Status;
+import org.apache.zookeeper.data.ACL;
 
 /**
  * Common ServerSet related functions
@@ -47,11 +42,7 @@ public class ServerSets {
    * A function that invokes {@link #toEndpoint(InetSocketAddress)}.
    */
   public static final Function<InetSocketAddress, Endpoint> TO_ENDPOINT =
-      new Function<InetSocketAddress, Endpoint>() {
-        @Override public Endpoint apply(InetSocketAddress address) {
-          return ServerSets.toEndpoint(address);
-        }
-      };
+      ServerSets::toEndpoint;
 
   /**
    * Creates a server set that registers at a single path applying the given ACL to all nodes
@@ -63,32 +54,11 @@ public class ServerSets {
    * @return A server set that registers at {@code zkPath}.
    */
   public static ServerSet create(ZooKeeperClient zkClient, Iterable<ACL> acl, String zkPath) {
-    return create(zkClient, acl, ImmutableSet.of(zkPath));
-  }
-
-  /**
-   * Creates a server set that registers at one or multiple paths applying the given ACL to all
-   * nodes created in the paths.
-   *
-   * @param zkClient ZooKeeper client to register with.
-   * @param acl The ACL to apply to the {@code zkPath} nodes the ServerSet creates.
-   * @param zkPaths Paths to register at, must be non-empty.
-   * @return A server set that registers at the given {@code zkPath}s.
-   */
-  public static ServerSet create(ZooKeeperClient zkClient, Iterable<ACL> acl, Set<String> zkPaths) {
     Preconditions.checkNotNull(zkClient);
     MorePreconditions.checkNotBlank(acl);
-    MorePreconditions.checkNotBlank(zkPaths);
+    MorePreconditions.checkNotBlank(zkPath);
 
-    if (zkPaths.size() == 1) {
-      return new ServerSetImpl(zkClient, acl, Iterables.getOnlyElement(zkPaths));
-    } else {
-      ImmutableList.Builder<ServerSet> builder = ImmutableList.builder();
-      for (String path : zkPaths) {
-        builder.add(new ServerSetImpl(zkClient, acl, path));
-      }
-      return new CompoundServerSet(builder.build());
-    }
+    return new ServerSetImpl(zkClient, acl, zkPath);
   }
 
   /**
