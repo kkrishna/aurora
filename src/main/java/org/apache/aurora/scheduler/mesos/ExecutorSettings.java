@@ -35,9 +35,9 @@ public final class ExecutorSettings {
   @SerializedName("command") private final List<String> executorCommand;
   @SerializedName("resources") private final List<URI> executorResources;
   @SerializedName("overhead") private final ResourceSlot executorOverhead;
-  @SerializedName("custom")private final JsonObject customSchema;
   private final List<Volume> globalContainerMounts;
   private final String thermosObserverRoot;
+  private final JsonObject config;
 
   ExecutorSettings(
       String executorName,
@@ -46,7 +46,7 @@ public final class ExecutorSettings {
       String thermosObserverRoot,
       ResourceSlot executorOverhead,
       List<Volume> globalContainerMounts,
-      JsonObject customSchema) {
+      JsonObject config) {
 
     this.executorName = executorName;
     this.executorCommand = requireNonNull(executorCommand);
@@ -54,7 +54,7 @@ public final class ExecutorSettings {
     this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
-    this.customSchema = customSchema;
+    this.config = config;
   }
 
   public String getExecutorName() {
@@ -81,8 +81,8 @@ public final class ExecutorSettings {
     return globalContainerMounts;
   }
 
-  public JsonObject getCustomSchema() {
-    return customSchema;
+  public JsonObject getConfig() {
+    return config;
   }
 
   public static Builder newBuilder() {
@@ -99,7 +99,7 @@ public final class ExecutorSettings {
         executorCommand,
         executorOverhead,
         globalContainerMounts,
-        customSchema);
+        config);
   }
 
   @Override
@@ -120,7 +120,7 @@ public final class ExecutorSettings {
         && Objects.equals(thermosObserverRoot, that.thermosObserverRoot)
         && Objects.equals(executorOverhead, that.executorOverhead)
         && Objects.equals(globalContainerMounts, that.globalContainerMounts)
-        && Objects.equals(customSchema, that.customSchema);
+        && Objects.equals(config, that.config);
   }
 
   public static final class Builder {
@@ -130,7 +130,7 @@ public final class ExecutorSettings {
     private String thermosObserverRoot;
     private ResourceSlot executorOverhead;
     private List<Volume> globalContainerMounts;
-    private JsonObject customSchema;
+    private JsonObject config;
 
     Builder() {
       executorResources = ImmutableList.of();
@@ -164,14 +164,14 @@ public final class ExecutorSettings {
     }
 
     public Builder setGlobalContainerMounts(List<Volume> globalContainerMounts) {
-      if(nonNull(globalContainerMounts)) {
+      if (nonNull(globalContainerMounts)) {
         this.globalContainerMounts = globalContainerMounts;
       }
       return this;
     }
 
-    public Builder setCustomSchema(JsonObject customSchema) {
-      this.customSchema = customSchema;
+    public Builder setConfig(JsonObject config) {
+      this.config = config;
       return this;
     }
 
@@ -183,7 +183,7 @@ public final class ExecutorSettings {
           thermosObserverRoot,
           executorOverhead,
           globalContainerMounts,
-          customSchema);
+          config);
     }
   }
 }

@@ -71,16 +71,19 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorSettingsConfigException("IO Error\n" + e, e);
     }
 
+    String thermosRootObserver = executorSettings.getConfig()
+        .get("thermosObserverRoot").getAsString();
+
     //GSON bypasses constraint checks by using reflection, build new object to enforce constraints,
-    // builder will also provide default vaules for empt
+    // builder will also provide default values for empty fields
     return ExecutorSettings.newBuilder()
         .setExecutorName(executorSettings.getExecutorName())
         .setExecutorCommand(executorSettings.getExecutorCommand())
         .setExecutorResources(executorSettings.getExecutorResources())
-        .setThermosObserverRoot(executorSettings.getThermosObserverRoot())
         .setExecutorOverhead(executorSettings.getExecutorOverhead())
+        .setThermosObserverRoot(thermosRootObserver)
         .setGlobalContainerMounts(executorSettings.getGlobalContainerMounts())
-        .setCustomSchema(executorSettings.getCustomSchema()).build();
+        .setConfig(executorSettings.getConfig()).build();
   }
 
   static class ResourceSlotDeserializer implements JsonDeserializer<ResourceSlot> {
@@ -143,15 +146,15 @@ public final class ExecutorSettingsLoader {
       URI.Builder builder = URI.newBuilder().setValue(jsonObj.get("value").getAsString());
 
       //TODO(rdelvalle): Figure out if there's a better pattern for doing this
-      if(jsonObj.has("executable")) {
+      if (jsonObj.has("executable")) {
         builder.setExecutable(jsonObj.get("executable").getAsBoolean());
       }
 
-      if(jsonObj.has("extract")) {
+      if (jsonObj.has("extract")) {
         builder.setExtract(jsonObj.get("extract").getAsBoolean());
       }
 
-      if(jsonObj.has("cache")) {
+      if (jsonObj.has("cache")) {
         builder.setCache(jsonObj.get("cache").getAsBoolean());
       }
 

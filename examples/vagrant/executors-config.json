@@ -14,7 +14,6 @@
       "cache": false
     }
   ],
-  "thermosObserverRoot": "/var/run/thermos",
   "globalContainerMounts": [
   ],
   "overhead": {
@@ -22,5 +21,8 @@
     "diskMB": 0,
     "ramMB": 128,
     "numPorts": 0
+  },
+  "config" : {
+    "thermosObserverRoot": "/var/run/thermos"
   }
 }
