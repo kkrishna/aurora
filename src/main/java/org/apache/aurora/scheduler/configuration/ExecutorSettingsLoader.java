@@ -19,17 +19,25 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
@@ -40,6 +48,8 @@ import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 import org.apache.mesos.Protos.CommandInfo.URI;
 
 public final class ExecutorSettingsLoader {
+  private static String AURORA_EXECUTOR = "AuroraExecutor";
+
   private ExecutorSettingsLoader()  {
     // Utility class
   }
@@ -50,20 +60,22 @@ public final class ExecutorSettingsLoader {
     }
   }
 
-  public static ExecutorSettings load(File configFile)
+  public static ImmutableMap<String, ExecutorSettings> load(File configFile)
       throws ExecutorSettingsConfigException {
 
     CharSource configFileSource = Files.asCharSource(configFile, StandardCharsets.UTF_8);
-    ExecutorSettings executorSettings;
+    ImmutableMap<String, ExecutorSettings> executorSettings;
 
     try (Reader reader = configFileSource.openBufferedStream()) {
       Gson gson = new GsonBuilder()
+          .registerTypeAdapter(Map.class, new ExecutorsMapDeserializer())
           .registerTypeAdapter(ResourceSlot.class, new ResourceSlotDeserializer())
           .registerTypeAdapter(Optional.class, new FlagsDeserializer())
           .registerTypeAdapter(Volume.class, new VolumeDeserializer())
           .registerTypeAdapter(URI.class, new URIDeserializer()).create();
+      Type type = new TypeToken<Map<String, ExecutorSettings>>(){}.getType();
 
-      executorSettings = gson.fromJson(reader, ExecutorSettings.class);
+      executorSettings = gson.fromJson(reader, type);
 
     } catch (JsonParseException e) {
       throw new ExecutorSettingsConfigException("Error parsing JSON config\n" + e, e);
@@ -71,19 +83,10 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorSettingsConfigException("IO Error\n" + e, e);
     }
 
-    String thermosRootObserver = executorSettings.getConfig()
-        .get("thermosObserverRoot").getAsString();
 
-    //GSON bypasses constraint checks by using reflection, build new object to enforce constraints,
-    // builder will also provide default values for empty fields
-    return ExecutorSettings.newBuilder()
-        .setExecutorName(executorSettings.getExecutorName())
-        .setExecutorCommand(executorSettings.getExecutorCommand())
-        .setExecutorResources(executorSettings.getExecutorResources())
-        .setExecutorOverhead(executorSettings.getExecutorOverhead())
-        .setThermosObserverRoot(thermosRootObserver)
-        .setGlobalContainerMounts(executorSettings.getGlobalContainerMounts())
-        .setConfig(executorSettings.getConfig()).build();
+    //GSON bypasses constraint checks by using reflection, thus we build new object
+    // to enforce constraints. Builder will also provide default values for empty fields
+    return executorSettings;
   }
 
   static class ResourceSlotDeserializer implements JsonDeserializer<ResourceSlot> {
@@ -95,7 +98,7 @@ public final class ExecutorSettingsLoader {
         JsonDeserializationContext context)
         throws JsonParseException {
 
-      JsonObject jsonObj = (JsonObject) json;
+      JsonObject jsonObj = json.getAsJsonObject();
 
       return new ResourceSlot(jsonObj.get("numCpus").getAsDouble(),
           Amount.of(jsonObj.get("ramMB").getAsLong(), Data.MB),
@@ -141,7 +144,7 @@ public final class ExecutorSettingsLoader {
         Type typeOfT,
         JsonDeserializationContext context)
         throws JsonParseException {
-      JsonObject jsonObj = (JsonObject) json;
+      JsonObject jsonObj = json.getAsJsonObject();
 
       URI.Builder builder = URI.newBuilder().setValue(jsonObj.get("value").getAsString());
 
@@ -161,4 +164,48 @@ public final class ExecutorSettingsLoader {
       return builder.build();
     }
   }
+
+  static class ExecutorsMapDeserializer implements JsonDeserializer<Map<String,ExecutorSettings>> {
+
+    @Override
+    public Map<String,ExecutorSettings> deserialize(
+        JsonElement json,
+        Type typeOfT,
+        JsonDeserializationContext context)
+        throws JsonParseException {
+
+
+      JsonObject jsonObject = json.getAsJsonObject();
+
+      Map<String, ExecutorSettings> settingsMap = new HashMap<String, ExecutorSettings>();
+
+      for(Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+
+        ExecutorSettings executorSettings = context.deserialize(entry.getValue(),
+            ExecutorSettings.class);
+
+        //TODO(rdelvalle): Change this in custom executors patch
+        String thermosRootObserver = "";
+
+        if(AURORA_EXECUTOR.equals(entry.getKey())) {
+          thermosRootObserver = executorSettings.getConfig().getAsJsonObject()
+              .get("thermosObserverRoot").getAsString();
+        }
+
+        settingsMap.put(entry.getKey(),
+            ExecutorSettings.newBuilder()
+                .setExecutorName(entry.getKey())
+                .setExecutorCommand(executorSettings.getExecutorCommand())
+                .setExecutorResources(executorSettings.getExecutorResources())
+                .setExecutorOverhead(executorSettings.getExecutorOverhead())
+                .setThermosObserverRoot(thermosRootObserver)
+                .setGlobalContainerMounts(executorSettings.getGlobalContainerMounts())
+                .setConfig(executorSettings.getConfig()).build());
+
+      }
+
+      return ImmutableMap.<String,ExecutorSettings>copyOf(settingsMap);
+    }
+  }
+
 }

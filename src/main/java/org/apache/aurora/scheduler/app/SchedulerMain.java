@@ -161,7 +161,8 @@ public class SchedulerMain extends AbstractApplication {
           protected void configure() {
             try {
               bind(ExecutorSettings.class)
-                  .toInstance(ExecutorSettingsLoader.load(EXECUTORS_CONFIG_PATH.get()));
+                  .toInstance(ExecutorSettingsLoader.load(
+                      EXECUTORS_CONFIG_PATH.get()).get("AuroraExecutor"));
             } catch (ExecutorSettingsLoader.ExecutorSettingsConfigException e) {
               LOG.severe(e.getMessage());
             }

@@ -16,8 +16,9 @@ package org.apache.aurora.scheduler.mesos;
 import java.util.List;
 import java.util.Objects;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 
 import org.apache.aurora.gen.Volume;
@@ -37,7 +38,7 @@ public final class ExecutorSettings {
   @SerializedName("overhead") private final ResourceSlot executorOverhead;
   private final List<Volume> globalContainerMounts;
   private final String thermosObserverRoot;
-  private final JsonObject config;
+  private final JsonElement config;
 
   ExecutorSettings(
       String executorName,
@@ -46,7 +47,7 @@ public final class ExecutorSettings {
       String thermosObserverRoot,
       ResourceSlot executorOverhead,
       List<Volume> globalContainerMounts,
-      JsonObject config) {
+      JsonElement config) {
 
     this.executorName = executorName;
     this.executorCommand = requireNonNull(executorCommand);
@@ -81,7 +82,7 @@ public final class ExecutorSettings {
     return globalContainerMounts;
   }
 
-  public JsonObject getConfig() {
+  public JsonElement getConfig() {
     return config;
   }
 
@@ -130,7 +131,7 @@ public final class ExecutorSettings {
     private String thermosObserverRoot;
     private ResourceSlot executorOverhead;
     private List<Volume> globalContainerMounts;
-    private JsonObject config;
+    private JsonElement config;
 
     Builder() {
       executorResources = ImmutableList.of();
@@ -149,7 +150,9 @@ public final class ExecutorSettings {
     }
 
     public Builder setExecutorResources(List<URI> executorResources) {
-      this.executorResources = executorResources;
+      if(nonNull(executorResources)) {
+        this.executorResources = executorResources;
+      }
       return this;
     }
 
@@ -170,7 +173,7 @@ public final class ExecutorSettings {
       return this;
     }
 
-    public Builder setConfig(JsonObject config) {
+    public Builder setConfig(JsonElement config) {
       this.config = config;
       return this;
     }

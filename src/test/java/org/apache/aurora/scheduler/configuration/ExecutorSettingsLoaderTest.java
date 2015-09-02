@@ -13,37 +13,93 @@
  */
 package org.apache.aurora.scheduler.configuration;
 
-import java.io.File;
+import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonObject;
 
+import java.io.File;
+import java.util.Map;
+
+import org.apache.aurora.common.quantity.Amount;
+import org.apache.aurora.common.quantity.Data;
+import org.apache.aurora.gen.Volume;
+import org.apache.aurora.scheduler.ResourceSlot;
+import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
+import org.apache.mesos.Protos.CommandInfo.URI;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
 
 public class ExecutorSettingsLoaderTest {
-  private static final String THERMOS_EXAMPLE_RESOURCE = "thermos-settings-example.json";
+  private static final String SINGLE_EXECUTOR_RESOURCE = "single-executor-example.json";
+  private static final String MULTI_EXECUTOR_RESOURCE = "multiple-executor-example.json";
   private static final String  THERMOS_NO_OBSERVER_RESOURCE
       = "executor-settings-thermos-no-observer.json";
   private static final String NO_VALUE_URI = "no-value-URI.json";
   private static final String NONEXISTENT_RESOURCE = "executor-settings-nonexistent.json";
-
-  @Test
-  public void parse() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
-    ExecutorSettings test = ExecutorSettingsLoader.load(
-        new File(getClass().getResource(THERMOS_EXAMPLE_RESOURCE).getFile()));
-
-    assertNotNull(test);
+  private static final JsonObject JSON_OBJECT = new JsonObject();
+  static {
+   JSON_OBJECT.addProperty("thermosObserverRoot", "/var/run/thermos");
   }
 
-  @Test(expected = NullPointerException.class)
+  private static final VolumeParser VOLUME_PARSER = new VolumeParser();
+  private static final ExecutorSettings THERMOS_EXECUTOR = ExecutorSettings.newBuilder()
+      .setExecutorName("AuroraExecutor")
+      .setExecutorCommand(
+          ImmutableList.of("thermos_executor.pex",
+              "--announcer-enable",
+              "--announcer-ensemble",
+              "localhost:2181"))
+      .setExecutorResources(ImmutableList.of(
+          URI.newBuilder()
+              .setValue("/home/vagrant/aurora/dist/thermos_executor.pex")
+              .setExecutable(true)
+              .setExtract(false)
+              .setCache(false).build()))
+      .setGlobalContainerMounts(ImmutableList.of(
+          VOLUME_PARSER.doParse("host:container:rw"), VOLUME_PARSER.doParse("host2:container2:ro")))
+      .setExecutorOverhead(
+          new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB),0))
+      .setThermosObserverRoot("/var/run/thermos")
+      .setConfig(JSON_OBJECT).build();
+
+  private static final ExecutorSettings COMMAND_EXECUTOR = ExecutorSettings.newBuilder()
+      .setExecutorName("CommandExecutor")
+      .setExecutorCommand(
+          ImmutableList.of("echo", "\"Hello World from Aurora!\""))
+      .setExecutorResources(ImmutableList.of())
+      .setGlobalContainerMounts(ImmutableList.of())
+      .setExecutorOverhead(
+          new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB),0))
+      .setThermosObserverRoot("").build();
+
+
+  @Test
+  public void parseMultiple() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+    Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
+        new File(getClass().getResource(MULTI_EXECUTOR_RESOURCE).getFile()));
+
+    assertEquals(THERMOS_EXECUTOR, test.get(THERMOS_EXECUTOR.getExecutorName()));
+    assertEquals(COMMAND_EXECUTOR, test.get(COMMAND_EXECUTOR.getExecutorName()));
+  }
+
+  @Test
+  public void parseSingle() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+    Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
+        new File(getClass().getResource(SINGLE_EXECUTOR_RESOURCE).getFile()));
+    assertEquals(THERMOS_EXECUTOR, test.get(THERMOS_EXECUTOR.getExecutorName()));
+    //assertNotNull(test);
+  }
+
+  @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)
   public void testThermosNoObserver()
       throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
     ExecutorSettingsLoader.load(
         new File(getClass().getResource(THERMOS_NO_OBSERVER_RESOURCE).getFile()));
   }
 
-  @Test(expected = NullPointerException.class)
+  @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)
   public void testThermosNoValueURI()
       throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
     ExecutorSettingsLoader.load(
