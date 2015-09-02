@@ -13,15 +13,14 @@
  */
 package org.apache.aurora.scheduler.configuration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.gson.JsonObject;
-
 import java.io.File;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonObject;
+
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
-import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
@@ -40,7 +39,7 @@ public class ExecutorSettingsLoaderTest {
   private static final String NONEXISTENT_RESOURCE = "executor-settings-nonexistent.json";
   private static final JsonObject JSON_OBJECT = new JsonObject();
   static {
-   JSON_OBJECT.addProperty("thermosObserverRoot", "/var/run/thermos");
+    JSON_OBJECT.addProperty("thermosObserverRoot", "/var/run/thermos");
   }
 
   private static final VolumeParser VOLUME_PARSER = new VolumeParser();
@@ -60,7 +59,7 @@ public class ExecutorSettingsLoaderTest {
       .setGlobalContainerMounts(ImmutableList.of(
           VOLUME_PARSER.doParse("host:container:rw"), VOLUME_PARSER.doParse("host2:container2:ro")))
       .setExecutorOverhead(
-          new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB),0))
+          new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
       .setThermosObserverRoot("/var/run/thermos")
       .setConfig(JSON_OBJECT).build();
 
@@ -71,9 +70,8 @@ public class ExecutorSettingsLoaderTest {
       .setExecutorResources(ImmutableList.of())
       .setGlobalContainerMounts(ImmutableList.of())
       .setExecutorOverhead(
-          new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB),0))
+          new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
       .setThermosObserverRoot("").build();
-
 
   @Test
   public void parseMultiple() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {

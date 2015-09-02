@@ -16,7 +16,6 @@ package org.apache.aurora.scheduler.mesos;
 import java.util.List;
 import java.util.Objects;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
@@ -150,7 +149,7 @@ public final class ExecutorSettings {
     }
 
     public Builder setExecutorResources(List<URI> executorResources) {
-      if(nonNull(executorResources)) {
+      if (nonNull(executorResources)) {
         this.executorResources = executorResources;
       }
       return this;

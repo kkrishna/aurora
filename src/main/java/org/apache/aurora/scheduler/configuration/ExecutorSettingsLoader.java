@@ -29,15 +29,11 @@ import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.TypeAdapter;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
 
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
@@ -48,7 +44,7 @@ import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 import org.apache.mesos.Protos.CommandInfo.URI;
 
 public final class ExecutorSettingsLoader {
-  private static String AURORA_EXECUTOR = "AuroraExecutor";
+  private static final String AURORA_EXECUTOR = "AuroraExecutor";
 
   private ExecutorSettingsLoader()  {
     // Utility class
@@ -73,7 +69,9 @@ public final class ExecutorSettingsLoader {
           .registerTypeAdapter(Optional.class, new FlagsDeserializer())
           .registerTypeAdapter(Volume.class, new VolumeDeserializer())
           .registerTypeAdapter(URI.class, new URIDeserializer()).create();
-      Type type = new TypeToken<Map<String, ExecutorSettings>>(){}.getType();
+
+      //TODO(rdelvalle): Figure out how to have this w/ no spaces w/o triggering stylecheck
+      Type type = new TypeToken<Map<String, ExecutorSettings>>() { }.getType();
 
       executorSettings = gson.fromJson(reader, type);
 
@@ -83,9 +81,6 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorSettingsConfigException("IO Error\n" + e, e);
     }
 
-
-    //GSON bypasses constraint checks by using reflection, thus we build new object
-    // to enforce constraints. Builder will also provide default values for empty fields
     return executorSettings;
   }
 
@@ -165,33 +160,33 @@ public final class ExecutorSettingsLoader {
     }
   }
 
-  static class ExecutorsMapDeserializer implements JsonDeserializer<Map<String,ExecutorSettings>> {
+  static class ExecutorsMapDeserializer implements JsonDeserializer<Map<String, ExecutorSettings>> {
 
     @Override
-    public Map<String,ExecutorSettings> deserialize(
+    public Map<String, ExecutorSettings> deserialize(
         JsonElement json,
         Type typeOfT,
         JsonDeserializationContext context)
         throws JsonParseException {
 
-
       JsonObject jsonObject = json.getAsJsonObject();
-
       Map<String, ExecutorSettings> settingsMap = new HashMap<String, ExecutorSettings>();
 
-      for(Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+      for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 
         ExecutorSettings executorSettings = context.deserialize(entry.getValue(),
             ExecutorSettings.class);
 
-        //TODO(rdelvalle): Change this in custom executors patch
+        //TODO(rdelvalle): Change this to be null when custom executors are supported
         String thermosRootObserver = "";
 
-        if(AURORA_EXECUTOR.equals(entry.getKey())) {
+        if (AURORA_EXECUTOR.equals(entry.getKey())) {
           thermosRootObserver = executorSettings.getConfig().getAsJsonObject()
               .get("thermosObserverRoot").getAsString();
         }
 
+        //GSON bypasses constraint checks by using reflection, thus we build new object
+        // to enforce constraints. Builder will also provide default values for empty fields
         settingsMap.put(entry.getKey(),
             ExecutorSettings.newBuilder()
                 .setExecutorName(entry.getKey())
@@ -204,7 +199,7 @@ public final class ExecutorSettingsLoader {
 
       }
 
-      return ImmutableMap.<String,ExecutorSettings>copyOf(settingsMap);
+      return ImmutableMap.<String, ExecutorSettings>copyOf(settingsMap);
     }
   }
 
