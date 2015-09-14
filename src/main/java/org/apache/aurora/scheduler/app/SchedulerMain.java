@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 import javax.inject.Inject;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
@@ -163,7 +164,7 @@ public class SchedulerMain implements Application {
                   .toInstance(ExecutorSettingsLoader.load(
                       EXECUTORS_CONFIG_PATH.get()).get("AuroraExecutor"));
             } catch (ExecutorSettingsLoader.ExecutorSettingsConfigException e) {
-              LOG.severe(e.getMessage());
+              throw Throwables.propagate(e);
             }
           }
         })
