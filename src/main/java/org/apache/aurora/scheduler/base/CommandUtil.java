@@ -31,38 +31,6 @@ public final class CommandUtil {
   }
 
   /**
-   * Gets the last part of the path of a URI.
-   *
-   * @param uri URI to parse
-   * @return The last segment of the URI.
-   */
-  public static String uriBasename(String uri) {
-    int lastSlash = uri.lastIndexOf('/');
-    if (lastSlash == -1) {
-      return uri;
-    } else {
-      String basename = uri.substring(lastSlash + 1);
-      MorePreconditions.checkNotBlank(basename, "URI must not end with a slash.");
-
-      return basename;
-    }
-  }
-
-  public static void backSlashTest(String uri) {
-    int lastSlash = uri.lastIndexOf('/');
-    if (lastSlash == -1) {
-      return;
-    } else {
-      String basename = uri.substring(lastSlash + 1);
-      MorePreconditions.checkNotBlank(basename, "URI must not end with a slash.");
-    }
-  }
-
-  /**
-   *
-   */
-
-  /**
    * Creates a description of a command that will fetch and execute the given URI to an executor
    * binary.
    *
@@ -92,23 +60,35 @@ public final class CommandUtil {
       List<URI> executorResources,
       String commandBasePath) {
 
-    // TODO(rdelvalle): Determine if this is really necessary or if it's worth getting rid of
-    // along with the test for it
-    backSlashTest(executorCommand.get(0));
-
-    for (URI uri : executorResources) {
-      backSlashTest(uri.getValue());
-    }
-
-    String cmdLine = String.join(" ", executorCommand);
     Preconditions.checkNotNull(executorResources);
-    MorePreconditions.checkNotBlank(cmdLine);
     MorePreconditions.checkNotBlank(commandBasePath);
     CommandInfo.Builder builder = CommandInfo.newBuilder();
 
-    builder.addAllUris(executorResources);
 
-    cmdLine = commandBasePath + cmdLine;
-    return builder.setValue(cmdLine.trim());
+
+    //TODO(rdelvalle): Determine if commandBasePath is needed
+    builder.setShell(false)
+        .addAllUris(executorResources)
+        .setValue(commandBasePath + executorCommand.get(0))
+        .addAllArguments(executorCommand);
+
+    return builder;
+  }
+
+  public static CommandInfo.Builder dockerCreate(
+      List<String> executorCommand,
+      List<URI> executorResources,
+      String commandBasePath) {
+
+
+    //TODO(rdelvalle): Determine if there is a way to collapse this to a single create
+    String cmd = String.join(" ", executorCommand);
+    Preconditions.checkNotNull(executorResources);
+    MorePreconditions.checkNotBlank(commandBasePath);
+    MorePreconditions.checkNotBlank(cmd);
+    CommandInfo.Builder builder = CommandInfo.newBuilder();
+
+    cmd = commandBasePath + cmd;
+    return builder.setValue(cmd.trim());
   }
 }

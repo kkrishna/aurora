@@ -203,7 +203,7 @@ public interface MesosTaskFactory {
       configureContainerVolumes(containerBuilder);
 
       // TODO(SteveNiemitz): Allow users to specify an executor per container type.
-      CommandInfo.Builder commandInfoBuilder = CommandUtil.create(
+      CommandInfo.Builder commandInfoBuilder = CommandUtil.dockerCreate(
           executorSettings.getExecutorCommand(),
           executorSettings.getExecutorResources(),
           "$MESOS_SANDBOX/");
