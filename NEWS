@@ -13,6 +13,12 @@
   container) to successfully launch Aurora executor. See
   https://github.com/apache/mesos/blob/ebcf8cc2f2f6c236f6e9315447c247e6348141e1/docs/getting-started.md
   for more details on Mesos runtime dependencies.
+  * The following command line arguments have been removed: thermos_executor_path,
+    thermos_executor_resources, thermos_executor_flags, thermos_observer_root, thermos_executor_cpu,
+    thermos_executor_ram
+    They have been with a single argument, executors_config_path which must point to a JSON config
+    file for executors. An example of this config file can be found at:
+    /examples/vagrant/executors-config.json
 
 0.9.0
 -----
