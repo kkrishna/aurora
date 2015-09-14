@@ -14,8 +14,6 @@
         "cache": false
       }
     ],
-    "globalContainerMounts": [
-    ],
     "overhead": {
       "numCpus": 0.25,
       "diskMB": 0,
@@ -29,7 +27,7 @@
   "CommandExecutor": {
     "command": [
       "echo",
-      "\"Hello World from Aurora!\""
+      "'Hello World from Aurora!'"
     ],
     "overhead": {
       "numCpus": 0.25,
