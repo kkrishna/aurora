@@ -14,10 +14,10 @@
 package org.apache.aurora.scheduler.configuration;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.google.gson.JsonObject;
 
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
@@ -37,9 +37,9 @@ public class ExecutorSettingsLoaderTest {
       = "executor-settings-thermos-no-observer.json";
   private static final String NO_VALUE_URI = "no-value-URI.json";
   private static final String NONEXISTENT_RESOURCE = "executor-settings-nonexistent.json";
-  private static final JsonObject JSON_OBJECT = new JsonObject();
+  private static final Map<String, String> CONFIG = new HashMap<String, String>();
   static {
-    JSON_OBJECT.addProperty("thermosObserverRoot", "/var/run/thermos");
+    CONFIG.put("thermosObserverRoot", "/var/run/thermos");
   }
 
   private static final VolumeParser VOLUME_PARSER = new VolumeParser();
@@ -61,7 +61,7 @@ public class ExecutorSettingsLoaderTest {
       .setExecutorOverhead(
           new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
       .setThermosObserverRoot("/var/run/thermos")
-      .setConfig(JSON_OBJECT).build();
+      .setConfig(CONFIG).build();
 
   private static final ExecutorSettings COMMAND_EXECUTOR = ExecutorSettings.newBuilder()
       .setExecutorName("CommandExecutor")
@@ -86,6 +86,8 @@ public class ExecutorSettingsLoaderTest {
   public void parseSingle() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
     Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
         new File(getClass().getResource(SINGLE_EXECUTOR_RESOURCE).getFile()));
+
+      System.out.println(test.get(THERMOS_EXECUTOR.getExecutorName()));
     assertEquals(THERMOS_EXECUTOR, test.get(THERMOS_EXECUTOR.getExecutorName()));
     //assertNotNull(test);
   }

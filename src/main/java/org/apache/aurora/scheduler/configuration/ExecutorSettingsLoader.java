@@ -16,24 +16,18 @@ package org.apache.aurora.scheduler.configuration;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.CharSource;
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
+import com.google.common.collect.Maps.EntryTransformer;
 
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
@@ -41,8 +35,15 @@ import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
-import org.apache.mesos.Protos.CommandInfo.URI;
+import org.apache.mesos.Protos;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 
+/**
+ * Loads configuration file for executors from a JSON file
+ * returns a map that can be used to dynamically choose executors
+ */
 public final class ExecutorSettingsLoader {
   private static final String AURORA_EXECUTOR = "AuroraExecutor";
 
@@ -56,151 +57,100 @@ public final class ExecutorSettingsLoader {
     }
   }
 
+
   public static ImmutableMap<String, ExecutorSettings> load(File configFile)
       throws ExecutorSettingsConfigException {
 
-    CharSource configFileSource = Files.asCharSource(configFile, StandardCharsets.UTF_8);
-    ImmutableMap<String, ExecutorSettings> executorSettings;
+    Map<String, ExecutorSettings> executorSettings = ImmutableMap.of();
 
-    try (Reader reader = configFileSource.openBufferedStream()) {
-      Gson gson = new GsonBuilder()
-          .registerTypeAdapter(Map.class, new ExecutorsMapDeserializer())
-          .registerTypeAdapter(ResourceSlot.class, new ResourceSlotDeserializer())
-          .registerTypeAdapter(Optional.class, new FlagsDeserializer())
-          .registerTypeAdapter(Volume.class, new VolumeDeserializer())
-          .registerTypeAdapter(URI.class, new URIDeserializer()).create();
+    try {
+      String reader = Files.toString(configFile, StandardCharsets.UTF_8);
 
-      //TODO(rdelvalle): Figure out how to have this w/ no spaces w/o triggering stylecheck
-      Type type = new TypeToken<Map<String, ExecutorSettings>>() { }.getType();
+      Map<String, ExecutorConfiguration> configMap = new ObjectMapper().readValue(reader,
+          new TypeReference<Map<String, ExecutorConfiguration>>() {
+          });
 
-      executorSettings = gson.fromJson(reader, type);
+      executorSettings = Maps.transformEntries(configMap,FROM_CONFIG);
+
 
     } catch (JsonParseException e) {
-      throw new ExecutorSettingsConfigException("Error parsing JSON config\n" + e, e);
+      throw Throwables.propagate(e);
     } catch (IOException e) {
-      throw new ExecutorSettingsConfigException("IO Error\n" + e, e);
+      throw Throwables.propagate(e);
     }
 
-    return executorSettings;
+    return ImmutableMap.<String, ExecutorSettings>copyOf(executorSettings);
   }
+    /**
+     * Helper method to convert information from config file into a Volume list. Uses
+     * VolumeParser class to verify correctness.
+     */
+    private static ImmutableList<Volume> globalContainerMountParser(
+            List<String> globalContainerMounts) {
 
-  static class ResourceSlotDeserializer implements JsonDeserializer<ResourceSlot> {
+        List<Volume> globalMountsList = new ArrayList<Volume>();
+        VolumeParser volParser = new VolumeParser();
 
-    @Override
-    public ResourceSlot deserialize(
-        JsonElement json,
-        Type typeOfT,
-        JsonDeserializationContext context)
-        throws JsonParseException {
-
-      JsonObject jsonObj = json.getAsJsonObject();
-
-      return new ResourceSlot(jsonObj.get("numCpus").getAsDouble(),
-          Amount.of(jsonObj.get("ramMB").getAsLong(), Data.MB),
-          Amount.of(jsonObj.get("diskMB").getAsLong(), Data.MB),
-          jsonObj.get("numPorts").getAsInt());
-    }
-  }
-
-  static class FlagsDeserializer implements JsonDeserializer<Optional<String>> {
-
-    @Override
-    public Optional<String> deserialize(
-        JsonElement json,
-        Type typeOfT,
-        JsonDeserializationContext context)
-        throws JsonParseException {
-
-      return Optional.<String>of(json.getAsString());
-    }
-  }
-  static class VolumeDeserializer implements JsonDeserializer<Volume> {
-
-    @Override
-    public Volume deserialize(
-        JsonElement json,
-        Type typeOfT,
-        JsonDeserializationContext context)
-        throws JsonParseException {
-      VolumeParser volParser = new VolumeParser();
-      try {
-        return volParser.doParse(json.getAsString());
-      } catch (IllegalArgumentException e) {
-        throw new JsonParseException("Failed to parse mount \"" + json.getAsString() + "\"", e);
-      }
-    }
-  }
-
-  static class URIDeserializer implements JsonDeserializer<URI> {
-
-    @Override
-    public URI deserialize(
-        JsonElement json,
-        Type typeOfT,
-        JsonDeserializationContext context)
-        throws JsonParseException {
-      JsonObject jsonObj = json.getAsJsonObject();
-
-      URI.Builder builder = URI.newBuilder().setValue(jsonObj.get("value").getAsString());
-
-      //TODO(rdelvalle): Figure out if there's a better pattern for doing this
-      if (jsonObj.has("executable")) {
-        builder.setExecutable(jsonObj.get("executable").getAsBoolean());
-      }
-
-      if (jsonObj.has("extract")) {
-        builder.setExtract(jsonObj.get("extract").getAsBoolean());
-      }
-
-      if (jsonObj.has("cache")) {
-        builder.setCache(jsonObj.get("cache").getAsBoolean());
-      }
-
-      return builder.build();
-    }
-  }
-
-  static class ExecutorsMapDeserializer implements JsonDeserializer<Map<String, ExecutorSettings>> {
-
-    @Override
-    public Map<String, ExecutorSettings> deserialize(
-        JsonElement json,
-        Type typeOfT,
-        JsonDeserializationContext context)
-        throws JsonParseException {
-
-      JsonObject jsonObject = json.getAsJsonObject();
-      Map<String, ExecutorSettings> settingsMap = new HashMap<String, ExecutorSettings>();
-
-      for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-
-        ExecutorSettings executorSettings = context.deserialize(entry.getValue(),
-            ExecutorSettings.class);
-
-        //TODO(rdelvalle): Change this to be null when custom executors are supported
-        String thermosRootObserver = "";
-
-        if (AURORA_EXECUTOR.equals(entry.getKey())) {
-          thermosRootObserver = executorSettings.getConfig().getAsJsonObject()
-              .get("thermosObserverRoot").getAsString();
+        for (String mount : globalContainerMounts) {
+            try {
+                globalMountsList.add(volParser.doParse(mount));
+            } catch (IllegalArgumentException e) {
+            }
         }
 
-        //GSON bypasses constraint checks by using reflection, thus we build new object
-        // to enforce constraints. Builder will also provide default values for empty fields
-        settingsMap.put(entry.getKey(),
-            ExecutorSettings.newBuilder()
-                .setExecutorName(entry.getKey())
-                .setExecutorCommand(executorSettings.getExecutorCommand())
-                .setExecutorResources(executorSettings.getExecutorResources())
-                .setExecutorOverhead(executorSettings.getExecutorOverhead())
-                .setThermosObserverRoot(thermosRootObserver)
-                .setGlobalContainerMounts(executorSettings.getGlobalContainerMounts())
-                .setConfig(executorSettings.getConfig()).build());
-
-      }
-
-      return ImmutableMap.<String, ExecutorSettings>copyOf(settingsMap);
+        return ImmutableList.<Volume>copyOf(globalMountsList);
     }
-  }
+
+
+   private static ImmutableList<Protos.CommandInfo.URI> resourceParser(
+           List<ExecutorConfiguration.Resource> resources) {
+        List<Protos.CommandInfo.URI> URIList = new ArrayList<Protos.CommandInfo.URI>();
+
+        for (ExecutorConfiguration.Resource res: resources) {
+
+            Protos.CommandInfo.URI.Builder builder = Protos.CommandInfo.URI.newBuilder();
+            builder.setValue(res.getValue());
+
+            //TODO(rdelvalle): Improve on this logic
+            if(res.getExecutable().isPresent()) {
+                builder.setExecutable(res.getExecutable().get());
+            }
+
+            if(res.getExtract().isPresent()) {
+                builder.setExecutable(res.getExtract().get());
+            }
+
+            if(res.getCache().isPresent()) {
+                builder.setExecutable(res.getCache().get());
+            }
+
+            URIList.add(builder.build());
+        }
+
+        return ImmutableList.<Protos.CommandInfo.URI>copyOf(URIList);
+    }
+
+
+  private static final EntryTransformer<String, ExecutorConfiguration, ExecutorSettings> FROM_CONFIG =
+          new EntryTransformer<String, ExecutorConfiguration, ExecutorSettings>() {
+            @Override
+            public ExecutorSettings transformEntry(String key, ExecutorConfiguration config) {
+
+                return ExecutorSettings.newBuilder()
+                        .setExecutorName(key)
+                        .setExecutorCommand(config.getCommand())
+                        .setGlobalContainerMounts(globalContainerMountParser(
+                                        config.getGlobalContainerMounts()))
+                        .setExecutorResources(resourceParser(config.getResources()))
+                        .setThermosObserverRoot(config.getConfig().get("thermosObserverRoot"))
+                        .setExecutorOverhead(
+                                new ResourceSlot(config.getOverhead().getNumCpus(),
+                                        Amount.of(config.getOverhead().getRamMB(), Data.MB),
+                                        Amount.of(config.getOverhead().getDiskMB(), Data.MB),
+                                        config.getOverhead().getNumPorts()))
+                        .setConfig(config.getConfig())
+                        .build();
+            }
+          };
 
 }

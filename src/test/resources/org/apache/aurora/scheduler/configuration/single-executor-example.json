@@ -9,7 +9,6 @@
     "resources": [
       {
         "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
-        "executable": true,
         "extract": false,
         "cache": false
       }
