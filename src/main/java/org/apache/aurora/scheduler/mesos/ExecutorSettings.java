@@ -14,6 +14,7 @@
 package org.apache.aurora.scheduler.mesos;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
@@ -23,6 +24,7 @@ import com.google.gson.annotations.SerializedName;
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.mesos.Protos.CommandInfo.URI;
+import org.codehaus.jackson.JsonNode;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -31,13 +33,13 @@ import static java.util.Objects.requireNonNull;
  * Configuration for the executor to run, and resource overhead required for it.
  */
 public final class ExecutorSettings {
-  @SerializedName("name") private final String executorName;
-  @SerializedName("command") private final List<String> executorCommand;
-  @SerializedName("resources") private final List<URI> executorResources;
-  @SerializedName("overhead") private final ResourceSlot executorOverhead;
+  private final String executorName;
+  private final List<String> executorCommand;
+  private final List<URI> executorResources;
+  private final ResourceSlot executorOverhead;
   private final List<Volume> globalContainerMounts;
   private final String thermosObserverRoot;
-  private final JsonElement config;
+  private final Map<String, String> config;
 
   ExecutorSettings(
       String executorName,
@@ -46,7 +48,7 @@ public final class ExecutorSettings {
       String thermosObserverRoot,
       ResourceSlot executorOverhead,
       List<Volume> globalContainerMounts,
-      JsonElement config) {
+      Map<String, String> config) {
 
     this.executorName = executorName;
     this.executorCommand = requireNonNull(executorCommand);
@@ -81,7 +83,7 @@ public final class ExecutorSettings {
     return globalContainerMounts;
   }
 
-  public JsonElement getConfig() {
+  public Map<String, String> getConfig() {
     return config;
   }
 
@@ -123,14 +125,27 @@ public final class ExecutorSettings {
         && Objects.equals(config, that.config);
   }
 
-  public static final class Builder {
+    @Override
+    public String toString() {
+        return com.google.common.base.MoreObjects.toStringHelper(this)
+                .add("executorName", executorName)
+                .add("executorCommand", executorCommand)
+                .add("executorResources", executorResources)
+                .add("executorOverhead", executorOverhead)
+                .add("globalContainerMounts", globalContainerMounts)
+                .add("thermosObserverRoot", thermosObserverRoot)
+                .add("config", config)
+                .toString();
+    }
+
+    public static final class Builder {
     private String executorName;
     private List<String> executorCommand;
     private List<URI> executorResources;
     private String thermosObserverRoot;
     private ResourceSlot executorOverhead;
     private List<Volume> globalContainerMounts;
-    private JsonElement config;
+    private Map<String, String> config;
 
     Builder() {
       executorResources = ImmutableList.of();
@@ -172,7 +187,7 @@ public final class ExecutorSettings {
       return this;
     }
 
-    public Builder setConfig(JsonElement config) {
+    public Builder setConfig(Map<String, String> config) {
       this.config = config;
       return this;
     }
