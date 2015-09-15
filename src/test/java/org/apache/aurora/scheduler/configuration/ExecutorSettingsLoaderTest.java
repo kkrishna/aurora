@@ -25,6 +25,7 @@ import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
+import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.CommandInfo.URI;
 import org.junit.Test;
 
@@ -45,11 +46,11 @@ public class ExecutorSettingsLoaderTest {
   private static final VolumeParser VOLUME_PARSER = new VolumeParser();
   private static final ExecutorSettings THERMOS_EXECUTOR = ExecutorSettings.newBuilder()
       .setExecutorName("AuroraExecutor")
-      .setExecutorCommand(
-          ImmutableList.of("thermos_executor.pex",
-              "--announcer-enable",
-              "--announcer-ensemble",
-              "localhost:2181"))
+      .setExecutorCommand(Protos.CommandInfo.newBuilder()
+          .setValue("thermos_executor.pex")
+          .setArguments(0,"--announcer-enable")
+          .setArguments(1,"--announcer-ensemble")
+          .setArguments(2,"localhost:2181"))
       .setExecutorResources(ImmutableList.of(
           URI.newBuilder()
               .setValue("/home/vagrant/aurora/dist/thermos_executor.pex")
@@ -65,12 +66,13 @@ public class ExecutorSettingsLoaderTest {
 
   private static final ExecutorSettings COMMAND_EXECUTOR = ExecutorSettings.newBuilder()
       .setExecutorName("CommandExecutor")
-      .setExecutorCommand(
-          ImmutableList.of("echo", "\"Hello World from Aurora!\""))
+      .setExecutorCommand(Protos.CommandInfo.newBuilder()
+          .setValue("echo")
+          .setArguments(0,"'Hello World from Aurora!'"))
       .setExecutorResources(ImmutableList.of())
       .setGlobalContainerMounts(ImmutableList.of())
       .setExecutorOverhead(
-          new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
+          new ResourceSlot(0.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
       .setThermosObserverRoot("").build();
 
   @Test
@@ -87,7 +89,7 @@ public class ExecutorSettingsLoaderTest {
     Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
         new File(getClass().getResource(SINGLE_EXECUTOR_RESOURCE).getFile()));
 
-      System.out.println(test.get(THERMOS_EXECUTOR.getExecutorName()));
+  System.out.println(test.get(THERMOS_EXECUTOR.getExecutorName()));
     assertEquals(THERMOS_EXECUTOR, test.get(THERMOS_EXECUTOR.getExecutorName()));
     //assertNotNull(test);
   }

@@ -23,8 +23,11 @@ import com.google.gson.annotations.SerializedName;
 
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
+import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.CommandInfo.URI;
 import org.codehaus.jackson.JsonNode;
+
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -34,7 +37,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ExecutorSettings {
   private final String executorName;
-  private final List<String> executorCommand;
+  private final CommandInfo.Builder executorCommand;
   private final List<URI> executorResources;
   private final ResourceSlot executorOverhead;
   private final List<Volume> globalContainerMounts;
@@ -43,7 +46,7 @@ public final class ExecutorSettings {
 
   ExecutorSettings(
       String executorName,
-      List<String> executorCommand,
+      CommandInfo.Builder executorCommand,
       List<URI> executorResources,
       String thermosObserverRoot,
       ResourceSlot executorOverhead,
@@ -63,7 +66,7 @@ public final class ExecutorSettings {
     return executorName;
   }
 
-  public List<String> getExecutorCommand() {
+  public CommandInfo.Builder getExecutorCommand() {
     return executorCommand;
   }
 
@@ -140,7 +143,7 @@ public final class ExecutorSettings {
 
     public static final class Builder {
     private String executorName;
-    private List<String> executorCommand;
+    private CommandInfo.Builder executorCommand;
     private List<URI> executorResources;
     private String thermosObserverRoot;
     private ResourceSlot executorOverhead;
@@ -158,7 +161,7 @@ public final class ExecutorSettings {
       return this;
     }
 
-    public Builder setExecutorCommand(List<String> executorCommand) {
+    public Builder setExecutorCommand(CommandInfo.Builder executorCommand) {
       this.executorCommand = executorCommand;
       return this;
     }

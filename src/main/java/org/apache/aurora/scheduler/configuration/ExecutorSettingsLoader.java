@@ -23,22 +23,24 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import com.google.common.collect.Maps.EntryTransformer;
+import com.google.common.io.Files;
 
-import org.apache.aurora.common.quantity.Amount;
-import org.apache.aurora.common.quantity.Data;
-import org.apache.aurora.gen.Volume;
-import org.apache.aurora.scheduler.ResourceSlot;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
+
 import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 import org.apache.mesos.Protos;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
+import org.apache.mesos.Protos.ExecutorInfo;
+import org.apache.mesos.Protos.Volume;
 
 /**
  * Loads configuration file for executors from a JSON file
@@ -61,96 +63,59 @@ public final class ExecutorSettingsLoader {
   public static ImmutableMap<String, ExecutorSettings> load(File configFile)
       throws ExecutorSettingsConfigException {
 
-    Map<String, ExecutorSettings> executorSettings = ImmutableMap.of();
+    Map<String, ExecutorConfig> executorSettings = ImmutableMap.of();
 
+    String configContents;
     try {
-      String reader = Files.toString(configFile, StandardCharsets.UTF_8);
-
-      Map<String, ExecutorConfiguration> configMap = new ObjectMapper().readValue(reader,
-          new TypeReference<Map<String, ExecutorConfiguration>>() {
-          });
-
-      executorSettings = Maps.transformEntries(configMap,FROM_CONFIG);
-
-
-    } catch (JsonParseException e) {
-      throw Throwables.propagate(e);
+      configContents = Files.toString(configFile, StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
 
-    return ImmutableMap.<String, ExecutorSettings>copyOf(executorSettings);
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.setPropertyNamingStrategy(
+        PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
+    mapper.registerModule(new ProtobufModule());
+
+    try {
+      executorSettings = mapper.readValue(configContents, new TypeReference<Map<String, ExecutorConfig>>() {});
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+
+    for (ExecutorConfig config : executorSettings.values()) {
+      System.out.println("Executor: " + config.executor.setExecutorId(Protos.ExecutorID.newBuilder().setValue("5")).build());
+      System.out.println("Volumes: " + FluentIterable.from(config.volumeMounts).transform(Volume.Builder::build).toList());
+      System.out.println("Map: " + config.config);
+    }
+
+    Map<String, ExecutorSettings> map = Maps.transformEntries(executorSettings, FROM_CONFIG);
+    return ImmutableMap.<String, ExecutorSettings>copyOf(map);
+
+   // return ImmutableMap.of();
   }
-    /**
-     * Helper method to convert information from config file into a Volume list. Uses
-     * VolumeParser class to verify correctness.
-     */
-    private static ImmutableList<Volume> globalContainerMountParser(
-            List<String> globalContainerMounts) {
 
-        List<Volume> globalMountsList = new ArrayList<Volume>();
-        VolumeParser volParser = new VolumeParser();
 
-        for (String mount : globalContainerMounts) {
-            try {
-                globalMountsList.add(volParser.doParse(mount));
-            } catch (IllegalArgumentException e) {
-            }
+  public static class ExecutorConfig {
+    public ExecutorInfo.Builder executor;
+    public List<Protos.Volume.Builder> volumeMounts;
+    public Map<String, String> config;
+  }
+
+  private static final EntryTransformer<String, ExecutorConfig, ExecutorSettings> FROM_CONFIG =
+      new EntryTransformer<String, ExecutorConfig, ExecutorSettings>() {
+        @Override
+        public ExecutorSettings transformEntry(String key, ExecutorConfig config) {
+
+          return ExecutorSettings.newBuilder()
+              .setExecutorName(key)
+              .setExecutorCommand(config.executor.getCommandBuilder())
+              //.setGlobalContainerMounts(config.volumeMounts)
+              .setExecutorResources(config.executor.getCommand().getUrisList())
+              .setThermosObserverRoot(config.config.get("thermosObserverRoot"))
+              //.setExecutorOverhead(config.executor.getResources(0).)
+              .setConfig(config.config)
+              .build();
         }
-
-        return ImmutableList.<Volume>copyOf(globalMountsList);
-    }
-
-
-   private static ImmutableList<Protos.CommandInfo.URI> resourceParser(
-           List<ExecutorConfiguration.Resource> resources) {
-        List<Protos.CommandInfo.URI> URIList = new ArrayList<Protos.CommandInfo.URI>();
-
-        for (ExecutorConfiguration.Resource res: resources) {
-
-            Protos.CommandInfo.URI.Builder builder = Protos.CommandInfo.URI.newBuilder();
-            builder.setValue(res.getValue());
-
-            //TODO(rdelvalle): Improve on this logic
-            if(res.getExecutable().isPresent()) {
-                builder.setExecutable(res.getExecutable().get());
-            }
-
-            if(res.getExtract().isPresent()) {
-                builder.setExecutable(res.getExtract().get());
-            }
-
-            if(res.getCache().isPresent()) {
-                builder.setExecutable(res.getCache().get());
-            }
-
-            URIList.add(builder.build());
-        }
-
-        return ImmutableList.<Protos.CommandInfo.URI>copyOf(URIList);
-    }
-
-
-  private static final EntryTransformer<String, ExecutorConfiguration, ExecutorSettings> FROM_CONFIG =
-          new EntryTransformer<String, ExecutorConfiguration, ExecutorSettings>() {
-            @Override
-            public ExecutorSettings transformEntry(String key, ExecutorConfiguration config) {
-
-                return ExecutorSettings.newBuilder()
-                        .setExecutorName(key)
-                        .setExecutorCommand(config.getCommand())
-                        .setGlobalContainerMounts(globalContainerMountParser(
-                                        config.getGlobalContainerMounts()))
-                        .setExecutorResources(resourceParser(config.getResources()))
-                        .setThermosObserverRoot(config.getConfig().get("thermosObserverRoot"))
-                        .setExecutorOverhead(
-                                new ResourceSlot(config.getOverhead().getNumCpus(),
-                                        Amount.of(config.getOverhead().getRamMB(), Data.MB),
-                                        Amount.of(config.getOverhead().getDiskMB(), Data.MB),
-                                        config.getOverhead().getNumPorts()))
-                        .setConfig(config.getConfig())
-                        .build();
-            }
-          };
-
+      };
 }

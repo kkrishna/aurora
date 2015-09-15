@@ -1,30 +1,60 @@
 {
   "AuroraExecutor" : {
-    "command": [
-      "thermos_executor.pex",
-      "--announcer-enable",
-      "--announcer-ensemble",
-      "localhost:2181"
-    ],
-    "resources": [
+    "executor": {
+      "command": {
+        "value": "thermos_executor.pex",
+        "arguments": [
+          "--announcer-enable",
+          "--announcer-ensemble",
+          "localhost:2181"
+        ],
+        "uris": [
+          {
+            "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
+            "executable": true,
+            "extract": false,
+            "cache": false
+          }
+        ]
+      },
+      "resources": [
+        {
+          "name": "cpu",
+          "type": "SCALAR",
+          "scalar": {
+            "value": 0.25
+          }
+        },
+        {
+          "name": "ram",
+          "type": "SCALAR",
+          "scalar": {
+            "value": 128
+          }
+        },
+        {
+          "name": "disk",
+          "type": "SCALAR",
+          "scalar": {
+            "value": 256
+          }
+        }
+      ]
+    },
+    "volume_mounts": [
       {
-        "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
-        "extract": false,
-        "cache": false
+        "mode": "RO",
+        "container_path": "/container",
+        "host_path": "/host"
+      },
+      {
+        "mode": "RW",
+        "container_path": "/container2",
+        "host_path": "/host2"
       }
     ],
-    "globalContainerMounts": [
-      "host:container:rw",
-      "host2:container2:ro"
-    ],
-    "overhead": {
-      "numCpus": 0.25,
-      "diskMB": 0,
-      "ramMB": 128,
-      "numPorts": 0
-    },
-    "config": {
-      "thermosObserverRoot": "/var/run/thermos"
+    "config" : {
+      "thermosObserverRoot" : "/var/run/thermos"
     }
   }
 }

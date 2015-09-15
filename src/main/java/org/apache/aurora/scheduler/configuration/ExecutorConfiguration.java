@@ -51,11 +51,14 @@ public class ExecutorConfiguration {
     private Optional<Boolean> cache;
 
     @JsonCreator
-    Resource(@JsonProperty("value") String value) {
+    Resource(@JsonProperty("value") String value,
+             @JsonProperty("executable") Boolean executable,
+             @JsonProperty("extract") Boolean extract,
+             @JsonProperty("cache") Boolean cache) {
       this.value = requireNonNull(value);
-      executable = Optional.empty();
-      extract = Optional.empty();
-      cache = Optional.empty();
+      this.executable = Optional.ofNullable(executable);
+      this.extract = Optional.ofNullable(extract);
+      this.cache = Optional.ofNullable(cache);
     }
 
     public String getValue() {
@@ -72,18 +75,6 @@ public class ExecutorConfiguration {
 
     public Optional<Boolean> getCache() {
       return cache;
-    }
-
-    public void setExecutable(Boolean executable) {
-      this.executable = Optional.<Boolean>of(executable);
-    }
-
-    public void setExtract(Boolean extract) {
-      this.extract = Optional.<Boolean>of(extract);
-    }
-
-    public void setCache(Boolean cache) {
-      this.cache = Optional.<Boolean>of(cache);
     }
   }
 

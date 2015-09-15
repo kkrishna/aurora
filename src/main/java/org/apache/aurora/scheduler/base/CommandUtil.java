@@ -38,7 +38,7 @@ public final class CommandUtil {
    * @param executorResources A list of URIs to be fetched into the sandbox with the executor.
    * @return A populated CommandInfo with correct resources set and command set.
    */
-  public static CommandInfo create(List<String> executorUri, List<URI> executorResources) {
+  public static CommandInfo create(CommandInfo.Builder executorUri, List<URI> executorResources) {
     return create(
         executorUri,
         executorResources,
@@ -56,39 +56,28 @@ public final class CommandUtil {
    * @return A CommandInfo.Builder populated with resources and a command.
    */
   public static CommandInfo.Builder create(
-      List<String> executorCommand,
+      CommandInfo.Builder executorCommand,
       List<URI> executorResources,
       String commandBasePath) {
 
     Preconditions.checkNotNull(executorResources);
-    MorePreconditions.checkNotBlank(commandBasePath);
     CommandInfo.Builder builder = CommandInfo.newBuilder();
 
-
-
-    //TODO(rdelvalle): Determine if commandBasePath is needed
-    builder.setShell(false)
-        .addAllUris(executorResources)
-        .setValue(commandBasePath + executorCommand.get(0))
-        .addAllArguments(executorCommand);
-
-    return builder;
+    return builder.setShell(false);
   }
 
   public static CommandInfo.Builder dockerCreate(
-      List<String> executorCommand,
+      CommandInfo.Builder executorCommand,
       List<URI> executorResources,
       String commandBasePath) {
 
 
     //TODO(rdelvalle): Determine if there is a way to collapse this to a single create
-    String cmd = String.join(" ", executorCommand);
     Preconditions.checkNotNull(executorResources);
     MorePreconditions.checkNotBlank(commandBasePath);
-    MorePreconditions.checkNotBlank(cmd);
     CommandInfo.Builder builder = CommandInfo.newBuilder();
 
-    cmd = commandBasePath + cmd;
+    String cmd = commandBasePath + executorCommand.getValue();
     return builder.setValue(cmd.trim());
   }
 }
