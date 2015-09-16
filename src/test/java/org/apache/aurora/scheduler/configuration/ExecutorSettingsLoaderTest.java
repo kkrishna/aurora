@@ -26,6 +26,7 @@ import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.Volume;
 import org.apache.mesos.Protos.CommandInfo.URI;
 import org.junit.Test;
 
@@ -48,19 +49,26 @@ public class ExecutorSettingsLoaderTest {
       .setExecutorName("AuroraExecutor")
       .setExecutorCommand(Protos.CommandInfo.newBuilder()
           .setValue("thermos_executor.pex")
-          .setArguments(0,"--announcer-enable")
-          .setArguments(1,"--announcer-ensemble")
-          .setArguments(2,"localhost:2181"))
-      .setExecutorResources(ImmutableList.of(
-          URI.newBuilder()
-              .setValue("/home/vagrant/aurora/dist/thermos_executor.pex")
-              .setExecutable(true)
-              .setExtract(false)
-              .setCache(false).build()))
+          .addArguments("--announcer-enable")
+          .addArguments("--announcer-ensemble")
+          .addArguments("localhost:2181")
+          .addUris(
+              URI.newBuilder()
+                  .setValue("/home/vagrant/aurora/dist/thermos_executor.pex")
+                  .setExecutable(true)
+                  .setExtract(false)
+                  .setCache(false).build()))
       .setGlobalContainerMounts(ImmutableList.of(
-          VOLUME_PARSER.doParse("host:container:rw"), VOLUME_PARSER.doParse("host2:container2:ro")))
+          Volume.newBuilder()
+              .setHostPath("host")
+              .setContainerPath("container")
+              .setMode(Protos.Volume.Mode.RW).build(),
+          Volume.newBuilder()
+              .setHostPath("host2")
+              .setContainerPath("container2")
+              .setMode(Protos.Volume.Mode.RO).build()))
       .setExecutorOverhead(
-          new ResourceSlot(0.25,  Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
+          new ResourceSlot(0.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
       .setThermosObserverRoot("/var/run/thermos")
       .setConfig(CONFIG).build();
 
@@ -68,8 +76,7 @@ public class ExecutorSettingsLoaderTest {
       .setExecutorName("CommandExecutor")
       .setExecutorCommand(Protos.CommandInfo.newBuilder()
           .setValue("echo")
-          .setArguments(0,"'Hello World from Aurora!'"))
-      .setExecutorResources(ImmutableList.of())
+          .addArguments("'Hello World from Aurora!'"))
       .setGlobalContainerMounts(ImmutableList.of())
       .setExecutorOverhead(
           new ResourceSlot(0.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
@@ -90,6 +97,7 @@ public class ExecutorSettingsLoaderTest {
         new File(getClass().getResource(SINGLE_EXECUTOR_RESOURCE).getFile()));
 
   System.out.println(test.get(THERMOS_EXECUTOR.getExecutorName()));
+    System.out.println("VALUE " + test.get(THERMOS_EXECUTOR.getExecutorName()).getExecutorCommand().getUrisList());
     assertEquals(THERMOS_EXECUTOR, test.get(THERMOS_EXECUTOR.getExecutorName()));
     //assertNotNull(test);
   }

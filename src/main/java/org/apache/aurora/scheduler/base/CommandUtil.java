@@ -35,13 +35,11 @@ public final class CommandUtil {
    * binary.
    *
    * @param executorUri A URI to the executor
-   * @param executorResources A list of URIs to be fetched into the sandbox with the executor.
    * @return A populated CommandInfo with correct resources set and command set.
    */
-  public static CommandInfo create(CommandInfo.Builder executorUri, List<URI> executorResources) {
+  public static CommandInfo create(CommandInfo.Builder executorUri) {
     return create(
         executorUri,
-        executorResources,
         "./").build();
   }
 
@@ -49,18 +47,14 @@ public final class CommandUtil {
    * Creates a description of a command that will fetch and execute the given URI to an executor
    * binary.
    *
-   * @param executorCommand A list of strings that form the command to be executed and it's
-   *                        arguments.
-   * @param executorResources A list of URIs to be fetched into the sandbox with the executor.
+   * @param executorCommand CommandInfo builder from Json config file
    * @param commandBasePath The relative base path of the executor.
    * @return A CommandInfo.Builder populated with resources and a command.
    */
   public static CommandInfo.Builder create(
       CommandInfo.Builder executorCommand,
-      List<URI> executorResources,
       String commandBasePath) {
 
-    Preconditions.checkNotNull(executorResources);
     CommandInfo.Builder builder = CommandInfo.newBuilder();
 
     return builder.setShell(false);
@@ -68,12 +62,10 @@ public final class CommandUtil {
 
   public static CommandInfo.Builder dockerCreate(
       CommandInfo.Builder executorCommand,
-      List<URI> executorResources,
       String commandBasePath) {
 
 
     //TODO(rdelvalle): Determine if there is a way to collapse this to a single create
-    Preconditions.checkNotNull(executorResources);
     MorePreconditions.checkNotBlank(commandBasePath);
     CommandInfo.Builder builder = CommandInfo.newBuilder();
 

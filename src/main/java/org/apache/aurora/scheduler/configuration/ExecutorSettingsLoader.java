@@ -85,20 +85,18 @@ public final class ExecutorSettingsLoader {
 
     for (ExecutorConfig config : executorSettings.values()) {
       System.out.println("Executor: " + config.executor.setExecutorId(Protos.ExecutorID.newBuilder().setValue("5")).build());
-      System.out.println("Volumes: " + FluentIterable.from(config.volumeMounts).transform(Volume.Builder::build).toList());
+      System.out.println("Volumes: " + config.volumeMounts);
       System.out.println("Map: " + config.config);
     }
 
     Map<String, ExecutorSettings> map = Maps.transformEntries(executorSettings, FROM_CONFIG);
     return ImmutableMap.<String, ExecutorSettings>copyOf(map);
-
-   // return ImmutableMap.of();
   }
 
 
   public static class ExecutorConfig {
     public ExecutorInfo.Builder executor;
-    public List<Protos.Volume.Builder> volumeMounts;
+    public List<Volume> volumeMounts;
     public Map<String, String> config;
   }
 
@@ -110,8 +108,7 @@ public final class ExecutorSettingsLoader {
           return ExecutorSettings.newBuilder()
               .setExecutorName(key)
               .setExecutorCommand(config.executor.getCommandBuilder())
-              //.setGlobalContainerMounts(config.volumeMounts)
-              .setExecutorResources(config.executor.getCommand().getUrisList())
+              .setGlobalContainerMounts(config.volumeMounts)
               .setThermosObserverRoot(config.config.get("thermosObserverRoot"))
               //.setExecutorOverhead(config.executor.getResources(0).)
               .setConfig(config.config)

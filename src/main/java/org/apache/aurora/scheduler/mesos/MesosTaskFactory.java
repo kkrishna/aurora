@@ -171,10 +171,7 @@ public interface MesosTaskFactory {
         ITaskConfig config,
         TaskInfo.Builder taskBuilder) {
 
-      CommandInfo commandInfo = CommandUtil.create(
-          executorSettings.getExecutorCommand(),
-          executorSettings.getExecutorResources(),
-          "./").build();
+      CommandInfo commandInfo = executorSettings.getExecutorCommand().setShell(false).build();
 
       ExecutorInfo.Builder executorBuilder = configureTaskForExecutor(task, config, commandInfo);
       taskBuilder.setExecutor(executorBuilder.build());
@@ -205,7 +202,6 @@ public interface MesosTaskFactory {
       // TODO(SteveNiemitz): Allow users to specify an executor per container type.
       CommandInfo.Builder commandInfoBuilder = CommandUtil.dockerCreate(
           executorSettings.getExecutorCommand(),
-          executorSettings.getExecutorResources(),
           "$MESOS_SANDBOX/");
 
       ExecutorInfo.Builder execBuilder =
@@ -236,15 +232,7 @@ public interface MesosTaskFactory {
               .setMode(Volume.Mode.RW)
               .build());
 
-      for (org.apache.aurora.gen.Volume v : executorSettings.getGlobalContainerMounts()) {
-        // This has already been validated to be correct in ExecutorSettings().
-        containerBuilder.addVolumes(
-            Volume.newBuilder()
-                .setHostPath(v.getHostPath())
-                .setContainerPath(v.getContainerPath())
-                .setMode(Volume.Mode.valueOf(v.getMode().getValue()))
-                .build());
-      }
+      containerBuilder.addAllVolumes(executorSettings.getGlobalContainerMounts());
     }
   }
 }

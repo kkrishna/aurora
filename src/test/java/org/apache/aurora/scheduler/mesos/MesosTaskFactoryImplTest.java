@@ -26,9 +26,7 @@ import org.apache.aurora.gen.DockerParameter;
 import org.apache.aurora.gen.Identity;
 import org.apache.aurora.gen.JobKey;
 import org.apache.aurora.gen.MesosContainer;
-import org.apache.aurora.gen.Mode;
 import org.apache.aurora.gen.TaskConfig;
-import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.Resources;
 import org.apache.aurora.scheduler.TierManager;
@@ -36,6 +34,7 @@ import org.apache.aurora.scheduler.mesos.MesosTaskFactory.MesosTaskFactoryImpl;
 import org.apache.aurora.scheduler.storage.entities.IAssignedTask;
 import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.Volume;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.CommandInfo.URI;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo;
@@ -59,10 +58,12 @@ import static org.junit.Assert.assertTrue;
 
 public class MesosTaskFactoryImplTest extends EasyMockTest {
 
-  private static final String EXECUTOR_WRAPPER_PATH = "/fake/executor_wrapper.sh";
-  private static final String EXECUTOR_WRAPPER_CMD = "executor_wrapper.sh";
+  private static final CommandInfo.Builder EXECUTOR_WRAPPER_PATH = CommandInfo.newBuilder()
+      .setValue("/fake/executor_wrapper.sh");
+  private static final CommandInfo.Builder EXECUTOR_WRAPPER_CMD = CommandInfo.newBuilder()
+      .setValue("executor_wrapper.sh");
   private static final URI EXECUTOR_WRAPPER_URI = URI.newBuilder()
-      .setValue(EXECUTOR_WRAPPER_PATH)
+      .setValue("/fake/executor_wrapper.sh")
       .setExecutable(true).build();
   private static final ITaskConfig TASK_CONFIG = ITaskConfig.build(new TaskConfig()
       .setJob(new JobKey("role", "environment", "job-name"))
@@ -104,7 +105,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
       .addAllResources(RESOURCES_EPSILON.toResourceList(DEFAULT))
       .setCommand(CommandInfo.newBuilder()
           .setValue("./executor.pex")
-          .addAllUris(NO_OVERHEAD_EXECUTOR.getExecutorResources()))
+          .addAllUris(NO_OVERHEAD_EXECUTOR.getExecutorCommand().getUrisList()))
           .build();
 
   private static final ExecutorInfo EXECUTOR_WITH_WRAPPER =
@@ -251,7 +252,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   @Test
   public void testExecutorAndWrapper() {
     config = ExecutorSettings.newBuilder()
-        .setExecutorCommand(ImmutableList.of(EXECUTOR_WRAPPER_CMD))
+        .setExecutorCommand(EXECUTOR_WRAPPER_CMD)
         .setExecutorResources(ImmutableList.of(EXECUTOR_WRAPPER_URI))
         .setThermosObserverRoot("/var/run/thermos")
         .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
@@ -268,11 +269,15 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   @Test
   public void testGlobalMounts() {
     config = ExecutorSettings.newBuilder()
-        .setExecutorCommand(ImmutableList.of(EXECUTOR_WRAPPER_PATH))
-        .setExecutorResources(ImmutableList.copyOf(SOME_OVERHEAD_EXECUTOR.getExecutorResources()))
+        .setExecutorCommand(EXECUTOR_WRAPPER_PATH.E_OVERHEAD_EXECUTOR.getExecutorCommand().getUrisList()))
         .setThermosObserverRoot("/var/run/thermos")
         .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
-        .setGlobalContainerMounts(ImmutableList.of(new Volume("/container", "/host", Mode.RO)))
+        .setGlobalContainerMounts(
+            ImmutableList.of(
+                Volume.newBuilder()
+                    .setContainerPath("/container")
+                    .setHostPath("/host")
+                    .setMode(Volume.Mode.RO).build()))
         .build();
     expect(tierManager.getTier(TASK_WITH_DOCKER.getTask())).andReturn(DEFAULT).times(2);
     taskFactory = new MesosTaskFactoryImpl(config, tierManager);
@@ -280,7 +285,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
     control.replay();
 
     TaskInfo taskInfo = taskFactory.createFrom(TASK_WITH_DOCKER, SLAVE);
-    Protos.Volume expected = Protos.Volume.newBuilder()
+    Volume expected = Volume.newBuilder()
         .setHostPath("/host")
         .setContainerPath("/container")
         .setMode(Protos.Volume.Mode.RO)

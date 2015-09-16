@@ -97,7 +97,7 @@ public class ResourceSlotTest {
     assertEquals(maxElements(TWO, MIN_THERMOS_RESOURCES), ONE.withOverhead(
         ExecutorSettings.newBuilder()
             .setExecutorOverhead(ONE)
-            .setExecutorCommand(ImmutableList.of("ignored"))
+            .setExecutorCommand(Protos.CommandInfo.newBuilder())
             .setThermosObserverRoot("ignored")
             .build()));
   }

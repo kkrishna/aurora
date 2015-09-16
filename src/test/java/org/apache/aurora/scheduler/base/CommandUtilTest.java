@@ -40,8 +40,9 @@ public class CommandUtilTest {
   public void testExecutorOnlyCommand() {
     CommandInfo cmd =
         CommandUtil.create(
-            ImmutableList.of("executor"),
-            ImmutableList.of(TEST_EXECUTOR_URI),
+            CommandInfo.newBuilder()
+                .setValue("executor")
+                .addUris(TEST_EXECUTOR_URI),
             PATH).build();
     assertEquals("./executor", cmd.getValue());
     assertEquals("test/executor", cmd.getUris(0).getValue());
@@ -50,8 +51,10 @@ public class CommandUtilTest {
   @Test
   public void testWrapperAndExecutorCommand() {
     CommandInfo cmd = CommandUtil.create(
-        ImmutableList.of("wrapper"),
-        ImmutableList.of(WRAPPER_URI, TEST_EXECUTOR_URI),
+        CommandInfo.newBuilder()
+            .setValue("wrapper")
+            .addUris(WRAPPER_URI)
+            .addUris(TEST_EXECUTOR_URI),
         PATH).build();
     assertEquals("./wrapper", cmd.getValue());
     assertEquals("test/wrapper", cmd.getUris(0).getValue());
@@ -60,18 +63,17 @@ public class CommandUtilTest {
 
   @Test(expected = NullPointerException.class)
   public void testBadParameters() {
-    CommandUtil.create(null, NO_RESOURCES, PATH);
+    CommandUtil.create(null, PATH);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testBadUri() {
-    CommandUtil.create(ImmutableList.of("a/b/c/"),
-        NO_RESOURCES, PATH);
+    CommandUtil.create(CommandInfo.newBuilder().setValue("a/b/c/"), PATH);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testEmptyUri() {
-    CommandUtil.create(ImmutableList.of(""), NO_RESOURCES, PATH);
+    CommandUtil.create(CommandInfo.newBuilder().setValue(""), PATH);
   }
 
   @Test
@@ -84,9 +86,12 @@ public class CommandUtilTest {
     String uri = "/usr/local/bin/test_executor";
     String expectedValue = "uris { value: \"/usr/local/bin/test_executor\" "
         + "executable: true } value: \"./test_executor\"";
-    CommandInfo actual = CommandUtil.create(
-        ImmutableList.of("test_executor"),
-        ImmutableList.of(URI.newBuilder().setValue(uri).setExecutable(true).build()),
+    CommandInfo actual =         CommandUtil.create(
+        CommandInfo.newBuilder()
+            .setValue("./test_executor")
+            .addUris(URI.newBuilder()
+                .setValue(uri)
+                .setExecutable(true).build()),
         PATH).build();
 
     assertEquals(expectedValue, TextFormat.shortDebugString(actual));
@@ -100,8 +105,11 @@ public class CommandUtilTest {
     assertEquals(
         expectedCommand,
         CommandUtil.create(
-            ImmutableList.of(basename),
-            ImmutableList.of(URI.newBuilder().setValue(uri).setExecutable(true).build()),
+            CommandInfo.newBuilder()
+                .setValue(basename)
+                .addUris(URI.newBuilder()
+                    .setValue(uri)
+                    .setExecutable(true).build()),
             PATH).build());
   }
 }
