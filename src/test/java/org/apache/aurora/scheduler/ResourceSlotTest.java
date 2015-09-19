@@ -28,6 +28,7 @@ import org.apache.aurora.gen.TaskConfig;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.CommandInfo;
 import org.junit.Test;
 
 import static org.apache.aurora.scheduler.ResourceSlot.MIN_THERMOS_RESOURCES;
@@ -97,7 +98,7 @@ public class ResourceSlotTest {
     assertEquals(maxElements(TWO, MIN_THERMOS_RESOURCES), ONE.withOverhead(
         ExecutorSettings.newBuilder()
             .setExecutorOverhead(ONE)
-            .setExecutorCommand(Protos.CommandInfo.newBuilder())
+            .setCommandInfo(CommandInfo.newBuilder())
             .setThermosObserverRoot("ignored")
             .build()));
   }

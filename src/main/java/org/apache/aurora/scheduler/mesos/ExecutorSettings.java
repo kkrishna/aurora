@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.mesos.Protos.Volume;
@@ -39,6 +40,8 @@ public final class ExecutorSettings {
   private final String thermosObserverRoot;
   private final Map<String, String> config;
 
+  private final static String THERMOS_NAME = "AuroraExecutor";
+
   ExecutorSettings(
       String executorName,
       CommandInfo.Builder commandInfo,
@@ -49,18 +52,23 @@ public final class ExecutorSettings {
 
     this.executorName = executorName;
     this.commandInfo = requireNonNull(commandInfo);
-    this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
     this.config = config;
+
+    if(THERMOS_NAME.equals(executorName)) {
+      this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
+    } else {
+      this.thermosObserverRoot = "";
+    }
   }
 
   public String getExecutorName() {
     return executorName;
   }
 
-  public ExecutorInfo.Builder getExecutoInfo() {
-    return executorInfo;
+  public CommandInfo.Builder getCommandInfo() {
+    return commandInfo;
   }
 
   public String getThermosObserverRoot() {
@@ -87,7 +95,7 @@ public final class ExecutorSettings {
   public int hashCode() {
     return Objects.hash(
         executorName,
-        executorInfo,
+        commandInfo,
         thermosObserverRoot,
         executorOverhead,
         globalContainerMounts,
@@ -107,7 +115,7 @@ public final class ExecutorSettings {
     final ExecutorSettings that = (ExecutorSettings) obj;
 
     return Objects.equals(executorName, that.executorName)
-        && Objects.equals(executorInfo, that.executorInfo)
+        && Objects.equals(commandInfo.build(), that.commandInfo.build())
         && Objects.equals(thermosObserverRoot, that.thermosObserverRoot)
         && Objects.equals(executorOverhead, that.executorOverhead)
         && Objects.equals(globalContainerMounts, that.globalContainerMounts)
@@ -118,7 +126,7 @@ public final class ExecutorSettings {
     public String toString() {
         return com.google.common.base.MoreObjects.toStringHelper(this)
                 .add("executorName", executorName)
-                .add("executorInfo", executorInfo)
+                .add("commandInfo", commandInfo)
                 .add("executorOverhead", executorOverhead)
                 .add("globalContainerMounts", globalContainerMounts)
                 .add("thermosObserverRoot", thermosObserverRoot)
@@ -128,7 +136,7 @@ public final class ExecutorSettings {
 
     public static final class Builder {
     private String executorName;
-    private ExecutorInfo.Builder executorInfo;
+    private CommandInfo.Builder commandInfo;
     private String thermosObserverRoot;
     private ResourceSlot executorOverhead;
     private List<Volume> globalContainerMounts;
@@ -137,6 +145,7 @@ public final class ExecutorSettings {
     Builder() {
       executorOverhead = ResourceSlot.NONE;
       globalContainerMounts = ImmutableList.of();
+      config = ImmutableMap.of();
     }
 
     public Builder setExecutorName(String executorName) {
@@ -144,8 +153,8 @@ public final class ExecutorSettings {
       return this;
     }
 
-    public Builder setExecutorInfo(ExecutorInfo.Builder executorInfo) {
-      this.executorInfo = executorInfo;
+    public Builder setCommandInfo(CommandInfo.Builder commandInfo) {
+      this.commandInfo = commandInfo;
       return this;
     }
 
@@ -174,7 +183,7 @@ public final class ExecutorSettings {
     public ExecutorSettings build() {
       return new ExecutorSettings(
           executorName,
-          executorInfo,
+          commandInfo,
           thermosObserverRoot,
           executorOverhead,
           globalContainerMounts,

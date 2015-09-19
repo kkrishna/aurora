@@ -18,10 +18,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Maps.EntryTransformer;
@@ -36,8 +38,7 @@ import org.apache.aurora.common.quantity.Data;
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
-import org.apache.mesos.Protos;
-import org.apache.mesos.Protos.ExecutorInfo;
+import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.Volume;
 
 /**
@@ -45,21 +46,12 @@ import org.apache.mesos.Protos.Volume;
  * returns a map that can be used to dynamically choose executors
  */
 public final class ExecutorSettingsLoader {
-  private static final String AURORA_EXECUTOR = "AuroraExecutor";
 
   private ExecutorSettingsLoader()  {
     // Utility class
   }
 
-  public static class ExecutorSettingsConfigException extends Exception {
-    public ExecutorSettingsConfigException(String message, Throwable cause) {
-      super(message, cause);
-    }
-  }
-
-
-  public static ImmutableMap<String, ExecutorSettings> load(File configFile)
-      throws ExecutorSettingsConfigException {
+  public static ImmutableMap<String, ExecutorSettings> load(File configFile) {
 
     Map<String, ExecutorConfig> executorSettings = ImmutableMap.of();
 
@@ -82,7 +74,7 @@ public final class ExecutorSettingsLoader {
     }
 
     for (ExecutorConfig config : executorSettings.values()) {
-      System.out.println("Executor: " + config.executor.setExecutorId(Protos.ExecutorID.newBuilder().setValue("5")).build());
+      System.out.println("Executor: " + config.command.build());
       System.out.println("Volumes: " + config.volumeMounts);
       System.out.println("Map: " + config.config);
     }
@@ -93,10 +85,17 @@ public final class ExecutorSettingsLoader {
 
 
   public static class ExecutorConfig {
-    public ExecutorInfo.Builder executor;
-    public List<Volume> volumeMounts;
-    public ResourceSlot overhead;
-    public Map<String, String> config;
+    public CommandInfo.Builder command;
+    public List<Volume> volumeMounts = ImmutableList.of();
+    public Overhead overhead;
+    public Map<String, String> config = ImmutableMap.of();
+
+    static private class Overhead {
+      public double cpus = 0;
+      public long ram = 0;
+      public long disk = 0;
+      public int ports = 0;
+    }
   }
 
   private static final EntryTransformer<String, ExecutorConfig, ExecutorSettings> FROM_CONFIG =
@@ -106,9 +105,13 @@ public final class ExecutorSettingsLoader {
 
           return ExecutorSettings.newBuilder()
               .setExecutorName(key)
-              .setExecutorInfo(config.executor)
+              .setCommandInfo(config.command)
               .setGlobalContainerMounts(config.volumeMounts)
-              .setExecutorOverhead(config.overhead)
+              .setExecutorOverhead(new ResourceSlot(
+                  config.overhead.cpus,
+                  Amount.of(config.overhead.ram, Data.MB),
+                  Amount.of(config.overhead.disk, Data.MB),
+                  config.overhead.ports))
               .setThermosObserverRoot(config.config.get("thermosObserverRoot"))
               .setConfig(config.config)
               .build();
@@ -118,10 +121,10 @@ public final class ExecutorSettingsLoader {
   public static void main(String...args) {
 
     ExecutorConfig test = new ExecutorConfig();
-    test.executor = ExecutorInfo.newBuilder();
+    test.command = CommandInfo.newBuilder();
     test.volumeMounts = new ArrayList<Volume>();
     test.volumeMounts.add(Volume.newBuilder().setHostPath("host").setContainerPath("container").setMode(Volume.Mode.RW).build());
-    test.overhead = new ResourceSlot(23.0, Amount.of(12L, Data.MB), Amount.of(230L, Data.MB), 20);
+    //test.overhead = new ResourceSlot(23.0, Amount.of(12L, Data.MB), Amount.of(230L, Data.MB), 20);
     ObjectMapper mapper = new ObjectMapper();
     mapper.setPropertyNamingStrategy(
         PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);

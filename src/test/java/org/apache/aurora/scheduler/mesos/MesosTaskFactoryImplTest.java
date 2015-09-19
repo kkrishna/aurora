@@ -50,6 +50,7 @@ import static org.apache.aurora.scheduler.ResourceSlot.MIN_THERMOS_RESOURCES;
 import static org.apache.aurora.scheduler.TierInfo.DEFAULT;
 import static org.apache.aurora.scheduler.base.TaskTestUtil.REVOCABLE_TIER;
 import static org.apache.aurora.scheduler.mesos.MesosTaskFactory.MesosTaskFactoryImpl.RESOURCES_EPSILON;
+import static org.apache.aurora.scheduler.mesos.TaskExecutors.EXECUTOR_COMMAND;
 import static org.apache.aurora.scheduler.mesos.TaskExecutors.NO_OVERHEAD_EXECUTOR;
 import static org.apache.aurora.scheduler.mesos.TaskExecutors.SOME_OVERHEAD_EXECUTOR;
 import static org.easymock.EasyMock.expect;
@@ -60,11 +61,11 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
 
   private static final CommandInfo.Builder EXECUTOR_WRAPPER_PATH = CommandInfo.newBuilder()
       .setValue("/fake/executor_wrapper.sh");
-  private static final CommandInfo.Builder EXECUTOR_WRAPPER_CMD = CommandInfo.newBuilder()
-      .setValue("executor_wrapper.sh");
   private static final URI EXECUTOR_WRAPPER_URI = URI.newBuilder()
       .setValue("/fake/executor_wrapper.sh")
       .setExecutable(true).build();
+  private static final CommandInfo.Builder EXECUTOR_WRAPPER_CMD = CommandInfo.newBuilder()
+      .setValue("executor_wrapper.sh").addUris(EXECUTOR_WRAPPER_URI);
   private static final ITaskConfig TASK_CONFIG = ITaskConfig.build(new TaskConfig()
       .setJob(new JobKey("role", "environment", "job-name"))
       .setOwner(new Identity("role", "user"))
@@ -103,10 +104,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
       .setName(MesosTaskFactoryImpl.EXECUTOR_NAME)
       .setSource(MesosTaskFactoryImpl.getInstanceSourceName(TASK.getTask(), TASK.getInstanceId()))
       .addAllResources(RESOURCES_EPSILON.toResourceList(DEFAULT))
-      .setCommand(CommandInfo.newBuilder()
-          .setValue("./executor.pex")
-          .addAllUris(NO_OVERHEAD_EXECUTOR.getExecutorCommand().getUrisList()))
-          .build();
+      .setCommand(EXECUTOR_COMMAND.build()).build();
 
   private static final ExecutorInfo EXECUTOR_WITH_WRAPPER =
       ExecutorInfo.newBuilder(DEFAULT_EXECUTOR)
@@ -244,7 +242,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
     control.replay();
 
     ExecutorSettings.newBuilder()
-        .setExecutorInfo(null)
+        .setCommandInfo(null)
         .setThermosObserverRoot("")
         .build();
   }
@@ -252,8 +250,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   @Test
   public void testExecutorAndWrapper() {
     config = ExecutorSettings.newBuilder()
-        .setExecutorCommand(EXECUTOR_WRAPPER_CMD)
-        .setExecutorResources(ImmutableList.of(EXECUTOR_WRAPPER_URI))
+        .setCommandInfo(EXECUTOR_WRAPPER_CMD)
         .setThermosObserverRoot("/var/run/thermos")
         .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
         .build();
@@ -269,7 +266,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   @Test
   public void testGlobalMounts() {
     config = ExecutorSettings.newBuilder()
-        .setExecutorCommand(EXECUTOR_WRAPPER_PATH.E_OVERHEAD_EXECUTOR.getExecutorCommand().getUrisList()))
+        .setCommandInfo(EXECUTOR_WRAPPER_CMD)
         .setThermosObserverRoot("/var/run/thermos")
         .setExecutorOverhead(SOME_OVERHEAD_EXECUTOR.getExecutorOverhead())
         .setGlobalContainerMounts(

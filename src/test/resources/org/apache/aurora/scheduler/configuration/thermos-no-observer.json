@@ -31,10 +31,6 @@
     "overhead":{
       "cpus":0.25,
       "ram": 128
-    },
-    "config" : {
-      "thermosObserverRoot" : "/var/run/thermos"
     }
   }
 }
-

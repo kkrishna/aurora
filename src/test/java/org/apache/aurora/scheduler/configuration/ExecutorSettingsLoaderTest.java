@@ -18,15 +18,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
 import org.apache.aurora.scheduler.ResourceSlot;
-import org.apache.aurora.scheduler.app.VolumeParser;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
+import org.apache.commons.lang.ObjectUtils;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.Volume;
+import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.CommandInfo.URI;
 import org.junit.Test;
 
@@ -36,8 +38,7 @@ public class ExecutorSettingsLoaderTest {
   private static final String SINGLE_EXECUTOR_RESOURCE = "single-executor-example.json";
   private static final String MULTI_EXECUTOR_RESOURCE = "multiple-executor-example.json";
   private static final String  THERMOS_NO_OBSERVER_RESOURCE
-      = "executor-settings-thermos-no-observer.json";
-  private static final String NO_VALUE_URI = "no-value-URI.json";
+      = "thermos-no-observer.json";
   private static final String NONEXISTENT_RESOURCE = "executor-settings-nonexistent.json";
   private static final Map<String, String> CONFIG = new HashMap<String, String>();
   static {
@@ -45,10 +46,7 @@ public class ExecutorSettingsLoaderTest {
   }
   private static final ExecutorSettings THERMOS_EXECUTOR = ExecutorSettings.newBuilder()
       .setExecutorName("AuroraExecutor")
-      .setExecutorInfo(
-          Protos.ExecutorInfo.newBuilder()
-          .setCommand((
-             Protos.CommandInfo.newBuilder()
+      .setCommandInfo(CommandInfo.newBuilder()
             .setValue("thermos_executor.pex")
             .addArguments("--announcer-enable")
             .addArguments("--announcer-ensemble")
@@ -58,16 +56,16 @@ public class ExecutorSettingsLoaderTest {
                     .setValue("/home/vagrant/aurora/dist/thermos_executor.pex")
                     .setExecutable(true)
                     .setExtract(false)
-                    .setCache(false).build())).build()))
+                    .setCache(false).build()))
       .setGlobalContainerMounts(ImmutableList.of(
           Volume.newBuilder()
-              .setHostPath("host")
-              .setContainerPath("container")
-              .setMode(Protos.Volume.Mode.RW).build(),
+              .setHostPath("/host")
+              .setContainerPath("/container")
+              .setMode(Protos.Volume.Mode.RO).build(),
           Volume.newBuilder()
-              .setHostPath("host2")
-              .setContainerPath("container2")
-              .setMode(Protos.Volume.Mode.RO).build()))
+              .setHostPath("/host2")
+              .setContainerPath("/container2")
+              .setMode(Protos.Volume.Mode.RW).build()))
       .setExecutorOverhead(
           new ResourceSlot(0.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
       .setThermosObserverRoot("/var/run/thermos")
@@ -75,18 +73,16 @@ public class ExecutorSettingsLoaderTest {
 
   private static final ExecutorSettings COMMAND_EXECUTOR = ExecutorSettings.newBuilder()
       .setExecutorName("CommandExecutor")
-      .setExecutorInfo(Protos.ExecutorInfo.newBuilder()
-          .setCommand(
-            Protos.CommandInfo.newBuilder()
-            .setValue("echo")
-            .addArguments("'Hello World from Aurora!'").build()))
+      .setCommandInfo(CommandInfo.newBuilder()
+          .setValue("echo")
+          .addArguments("'Hello World from Aurora!'"))
       .setGlobalContainerMounts(ImmutableList.of())
       .setExecutorOverhead(
           new ResourceSlot(0.25, Amount.of(128L, Data.MB), Amount.of(0L, Data.MB), 0))
       .setThermosObserverRoot("").build();
 
   @Test
-  public void parseMultiple() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+  public void parseMultiple() {
     Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
         new File(getClass().getResource(MULTI_EXECUTOR_RESOURCE).getFile()));
 
@@ -95,32 +91,23 @@ public class ExecutorSettingsLoaderTest {
   }
 
   @Test
-  public void parseSingle() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+  public void parseSingle() {
     Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
         new File(getClass().getResource(SINGLE_EXECUTOR_RESOURCE).getFile()));
 
   System.out.println(test.get(THERMOS_EXECUTOR.getExecutorName()));
-    System.out.println("VALUE " + test.get(THERMOS_EXECUTOR.getExecutorName()).getExecutoInfo().getCommand().getUrisList());
     assertEquals(THERMOS_EXECUTOR, test.get(THERMOS_EXECUTOR.getExecutorName()));
-    //assertNotNull(test);
   }
 
-  @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)
-  public void testThermosNoObserver()
-      throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+  //@Test(expected = RuntimeException.class)
+  @Test(expected = NullPointerException.class)
+  public void testThermosNoObserver() {
     ExecutorSettingsLoader.load(
         new File(getClass().getResource(THERMOS_NO_OBSERVER_RESOURCE).getFile()));
   }
 
-  @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)
-  public void testThermosNoValueURI()
-      throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
-    ExecutorSettingsLoader.load(
-        new File(getClass().getResource(NO_VALUE_URI).getFile()));
-  }
-
-  @Test(expected = ExecutorSettingsLoader.ExecutorSettingsConfigException.class)
-  public void testNonExistentFile() throws ExecutorSettingsLoader.ExecutorSettingsConfigException {
+  //@Test(expected = RuntimeException.class)
+  public void testNonExistentFile() {
     ExecutorSettingsLoader.load(new File(NONEXISTENT_RESOURCE));
   }
 }

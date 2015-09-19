@@ -159,13 +159,9 @@ public class SchedulerMain implements Application {
         .add(new AbstractModule() {
           @Override
           protected void configure() {
-            try {
-              bind(ExecutorSettings.class)
-                  .toInstance(ExecutorSettingsLoader.load(
-                      EXECUTORS_CONFIG_PATH.get()).get("AuroraExecutor"));
-            } catch (ExecutorSettingsLoader.ExecutorSettingsConfigException e) {
-              throw Throwables.propagate(e);
-            }
+            bind(ExecutorSettings.class)
+                .toInstance(ExecutorSettingsLoader.load(
+                    EXECUTORS_CONFIG_PATH.get()).get("AuroraExecutor"));
           }
         })
         .add(getMesosModules())
