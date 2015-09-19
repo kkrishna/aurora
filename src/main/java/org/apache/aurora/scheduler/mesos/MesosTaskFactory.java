@@ -171,7 +171,8 @@ public interface MesosTaskFactory {
         ITaskConfig config,
         TaskInfo.Builder taskBuilder) {
 
-      CommandInfo commandInfo = executorSettings.getExecutorCommand().setShell(false).build();
+      CommandInfo commandInfo = executorSettings.getExecutoInfo()
+          .getCommandBuilder().setShell(false).build();
 
       ExecutorInfo.Builder executorBuilder = configureTaskForExecutor(task, config, commandInfo);
       taskBuilder.setExecutor(executorBuilder.build());
@@ -200,9 +201,12 @@ public interface MesosTaskFactory {
       configureContainerVolumes(containerBuilder);
 
       // TODO(SteveNiemitz): Allow users to specify an executor per container type.
-      CommandInfo.Builder commandInfoBuilder = CommandUtil.dockerCreate(
-          executorSettings.getExecutorCommand(),
-          "$MESOS_SANDBOX/");
+      CommandInfo.Builder commandInfoBuilder = executorSettings.getExecutoInfo()
+          .getCommandBuilder();
+
+      String value = "$MESOS_SANDBOX/" + commandInfoBuilder.getValue();
+
+      commandInfoBuilder.setValue(value.trim());
 
       ExecutorInfo.Builder execBuilder =
           configureTaskForExecutor(task, taskConfig, commandInfoBuilder.build())

@@ -244,7 +244,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
     control.replay();
 
     ExecutorSettings.newBuilder()
-        .setExecutorCommand(null)
+        .setExecutorInfo(null)
         .setThermosObserverRoot("")
         .build();
   }

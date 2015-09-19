@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.mesos.Protos.Volume;
 import org.apache.mesos.Protos.CommandInfo;
+import org.apache.mesos.Protos.ExecutorInfo;
 
 
 import static java.util.Objects.nonNull;
@@ -32,7 +33,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ExecutorSettings {
   private final String executorName;
-  private final CommandInfo.Builder executorCommand;
+  private final CommandInfo.Builder commandInfo;
   private final ResourceSlot executorOverhead;
   private final List<Volume> globalContainerMounts;
   private final String thermosObserverRoot;
@@ -40,14 +41,14 @@ public final class ExecutorSettings {
 
   ExecutorSettings(
       String executorName,
-      CommandInfo.Builder executorCommand,
+      CommandInfo.Builder commandInfo,
       String thermosObserverRoot,
       ResourceSlot executorOverhead,
       List<Volume> globalContainerMounts,
       Map<String, String> config) {
 
     this.executorName = executorName;
-    this.executorCommand = requireNonNull(executorCommand);
+    this.commandInfo = requireNonNull(commandInfo);
     this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
@@ -58,8 +59,8 @@ public final class ExecutorSettings {
     return executorName;
   }
 
-  public CommandInfo.Builder getExecutorCommand() {
-    return executorCommand;
+  public ExecutorInfo.Builder getExecutoInfo() {
+    return executorInfo;
   }
 
   public String getThermosObserverRoot() {
@@ -86,9 +87,8 @@ public final class ExecutorSettings {
   public int hashCode() {
     return Objects.hash(
         executorName,
-        executorCommand,
+        executorInfo,
         thermosObserverRoot,
-        executorCommand,
         executorOverhead,
         globalContainerMounts,
         config);
@@ -107,7 +107,7 @@ public final class ExecutorSettings {
     final ExecutorSettings that = (ExecutorSettings) obj;
 
     return Objects.equals(executorName, that.executorName)
-        && Objects.equals(executorCommand, that.executorCommand)
+        && Objects.equals(executorInfo, that.executorInfo)
         && Objects.equals(thermosObserverRoot, that.thermosObserverRoot)
         && Objects.equals(executorOverhead, that.executorOverhead)
         && Objects.equals(globalContainerMounts, that.globalContainerMounts)
@@ -118,7 +118,7 @@ public final class ExecutorSettings {
     public String toString() {
         return com.google.common.base.MoreObjects.toStringHelper(this)
                 .add("executorName", executorName)
-                .add("executorCommand", executorCommand)
+                .add("executorInfo", executorInfo)
                 .add("executorOverhead", executorOverhead)
                 .add("globalContainerMounts", globalContainerMounts)
                 .add("thermosObserverRoot", thermosObserverRoot)
@@ -128,7 +128,7 @@ public final class ExecutorSettings {
 
     public static final class Builder {
     private String executorName;
-    private CommandInfo.Builder executorCommand;
+    private ExecutorInfo.Builder executorInfo;
     private String thermosObserverRoot;
     private ResourceSlot executorOverhead;
     private List<Volume> globalContainerMounts;
@@ -144,8 +144,8 @@ public final class ExecutorSettings {
       return this;
     }
 
-    public Builder setExecutorCommand(CommandInfo.Builder executorCommand) {
-      this.executorCommand = executorCommand;
+    public Builder setExecutorInfo(ExecutorInfo.Builder executorInfo) {
+      this.executorInfo = executorInfo;
       return this;
     }
 
@@ -174,7 +174,7 @@ public final class ExecutorSettings {
     public ExecutorSettings build() {
       return new ExecutorSettings(
           executorName,
-          executorCommand,
+          executorInfo,
           thermosObserverRoot,
           executorOverhead,
           globalContainerMounts,

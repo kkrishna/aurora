@@ -1,43 +1,18 @@
 {
   "AuroraExecutor" : {
-    "executor": {
-      "command": {
-        "value": "thermos_executor.pex",
-        "arguments": [
-          "--announcer-enable",
-          "--announcer-ensemble",
-          "localhost:2181"
-        ],
-        "uris": [
-          {
-            "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
-            "executable": true,
-            "extract": false,
-            "cache": false
-          }
-        ]
-      },
-      "resources": [
+    "command": {
+      "value": "thermos_executor.pex",
+      "arguments": [
+        "--announcer-enable",
+        "--announcer-ensemble",
+        "localhost:2181"
+      ],
+      "uris": [
         {
-          "name": "cpu",
-          "type": "SCALAR",
-          "scalar": {
-            "value": 0.25
-          }
-        },
-        {
-          "name": "ram",
-          "type": "SCALAR",
-          "scalar": {
-            "value": 128
-          }
-        },
-        {
-          "name": "disk",
-          "type": "SCALAR",
-          "scalar": {
-            "value": 256
-          }
+          "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
+          "executable": true,
+          "extract": false,
+          "cache": false
         }
       ]
     },
@@ -53,6 +28,18 @@
         "host_path": "/host2"
       }
     ],
+    "overhead":{
+      "num_cpus":0.25,
+      "disk": {
+        "unit": "MB",
+        "value": 128
+      },
+      "ram":{
+        "unit":"MB",
+        "value": 128
+      },
+      "num_ports":0
+    },
     "config" : {
       "thermosObserverRoot" : "/var/run/thermos"
     }
