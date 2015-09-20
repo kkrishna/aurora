@@ -171,7 +171,7 @@ public interface MesosTaskFactory {
         ITaskConfig config,
         TaskInfo.Builder taskBuilder) {
 
-      CommandInfo commandInfo = executorSettings.getCommandInfo().setShell(false).build();
+      CommandInfo commandInfo = executorSettings.getCommandInfo().build();
 
       ExecutorInfo.Builder executorBuilder = configureTaskForExecutor(task, config, commandInfo);
       taskBuilder.setExecutor(executorBuilder.build());

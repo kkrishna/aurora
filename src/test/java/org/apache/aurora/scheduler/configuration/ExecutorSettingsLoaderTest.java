@@ -95,7 +95,6 @@ public class ExecutorSettingsLoaderTest {
     Map<String, ExecutorSettings> test = ExecutorSettingsLoader.load(
         new File(getClass().getResource(SINGLE_EXECUTOR_RESOURCE).getFile()));
 
-  System.out.println(test.get(THERMOS_EXECUTOR.getExecutorName()));
     assertEquals(THERMOS_EXECUTOR, test.get(THERMOS_EXECUTOR.getExecutorName()));
   }
 
