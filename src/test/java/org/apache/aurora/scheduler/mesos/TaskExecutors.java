@@ -13,14 +13,9 @@
  */
 package org.apache.aurora.scheduler.mesos;
 
-import java.util.List;
-
-import com.google.common.collect.ImmutableList;
-
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
 import org.apache.aurora.scheduler.ResourceSlot;
-import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.CommandInfo.URI;
 

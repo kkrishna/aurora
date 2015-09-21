@@ -24,7 +24,6 @@ import java.util.logging.Logger;
 import javax.inject.Singleton;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
@@ -69,6 +68,7 @@ import org.apache.aurora.scheduler.storage.Storage;
 import org.apache.aurora.scheduler.storage.db.DbUtil;
 import org.apache.aurora.scheduler.storage.entities.IScheduledTask;
 import org.apache.mesos.Protos;
+import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -231,7 +231,7 @@ public class StatusUpdateBenchmark {
             bind(Clock.class).toInstance(new FakeClock());
             bind(ExecutorSettings.class)
                 .toInstance(ExecutorSettings.newBuilder()
-                    .setExecutorCommand(ImmutableList.of("/executor/thermos"))
+                    .setCommandInfo(CommandInfo.newBuilder().setValue("/executor/thermos"))
                     .setThermosObserverRoot("/var/run/thermos")
                     .build());
             bind(StatsProvider.class).toInstance(new FakeStatsProvider());

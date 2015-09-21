@@ -34,7 +34,6 @@ import org.apache.aurora.scheduler.mesos.MesosTaskFactory.MesosTaskFactoryImpl;
 import org.apache.aurora.scheduler.storage.entities.IAssignedTask;
 import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
 import org.apache.mesos.Protos;
-import org.apache.mesos.Protos.Volume;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.CommandInfo.URI;
 import org.apache.mesos.Protos.ContainerInfo.DockerInfo;
@@ -43,6 +42,7 @@ import org.apache.mesos.Protos.Parameter;
 import org.apache.mesos.Protos.Resource;
 import org.apache.mesos.Protos.SlaveID;
 import org.apache.mesos.Protos.TaskInfo;
+import org.apache.mesos.Protos.Volume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,8 +59,6 @@ import static org.junit.Assert.assertTrue;
 
 public class MesosTaskFactoryImplTest extends EasyMockTest {
 
-  private static final CommandInfo.Builder EXECUTOR_WRAPPER_PATH = CommandInfo.newBuilder()
-      .setValue("/fake/executor_wrapper.sh");
   private static final URI EXECUTOR_WRAPPER_URI = URI.newBuilder()
       .setValue("/fake/executor_wrapper.sh")
       .setExecutable(true).build();

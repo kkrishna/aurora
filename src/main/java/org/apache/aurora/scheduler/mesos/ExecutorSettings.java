@@ -21,10 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.aurora.scheduler.ResourceSlot;
-import org.apache.mesos.Protos.Volume;
 import org.apache.mesos.Protos.CommandInfo;
-import org.apache.mesos.Protos.ExecutorInfo;
-
+import org.apache.mesos.Protos.Volume;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -40,7 +38,7 @@ public final class ExecutorSettings {
   private final String thermosObserverRoot;
   private final Map<String, String> config;
 
-  private final static String THERMOS_NAME = "AuroraExecutor";
+  private static final String THERMOS_NAME = "AuroraExecutor";
 
   ExecutorSettings(
       String executorName,
@@ -56,7 +54,7 @@ public final class ExecutorSettings {
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
     this.config = config;
 
-    if(THERMOS_NAME.equals(executorName)) {
+    if (THERMOS_NAME.equals(executorName)) {
       this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
     } else {
       this.thermosObserverRoot = "";
@@ -122,19 +120,19 @@ public final class ExecutorSettings {
         && Objects.equals(config, that.config);
   }
 
-    @Override
-    public String toString() {
-        return com.google.common.base.MoreObjects.toStringHelper(this)
-                .add("executorName", executorName)
-                .add("commandInfo", commandInfo)
-                .add("executorOverhead", executorOverhead)
-                .add("globalContainerMounts", globalContainerMounts)
-                .add("thermosObserverRoot", thermosObserverRoot)
-                .add("config", config)
-                .toString();
-    }
+  @Override
+  public String toString() {
+    return com.google.common.base.MoreObjects.toStringHelper(this)
+        .add("executorName", executorName)
+        .add("commandInfo", commandInfo)
+        .add("executorOverhead", executorOverhead)
+        .add("globalContainerMounts", globalContainerMounts)
+        .add("thermosObserverRoot", thermosObserverRoot)
+        .add("config", config)
+        .toString();
+  }
 
-    public static final class Builder {
+  public static final class Builder {
     private String executorName;
     private CommandInfo.Builder commandInfo;
     private String thermosObserverRoot;

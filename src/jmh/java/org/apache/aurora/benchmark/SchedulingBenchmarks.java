@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Singleton;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.EventBus;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -58,6 +57,7 @@ import org.apache.aurora.scheduler.storage.Storage;
 import org.apache.aurora.scheduler.storage.db.DbUtil;
 import org.apache.aurora.scheduler.storage.entities.IHostAttributes;
 import org.apache.aurora.scheduler.storage.entities.IScheduledTask;
+import org.apache.mesos.Protos.CommandInfo;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -151,7 +151,7 @@ public class SchedulingBenchmarks {
               bind(SchedulingFilterImpl.class).in(Singleton.class);
               bind(ExecutorSettings.class)
                   .toInstance(ExecutorSettings.newBuilder()
-                      .setExecutorCommand(ImmutableList.of("/executor/thermos"))
+                      .setCommandInfo(CommandInfo.newBuilder().setValue("/executor/thermos"))
                       .setThermosObserverRoot("/var/run/thermos")
                       .build());
 

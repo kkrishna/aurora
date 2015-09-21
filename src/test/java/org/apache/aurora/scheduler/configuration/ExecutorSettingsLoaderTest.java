@@ -18,18 +18,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.apache.aurora.common.quantity.Amount;
 import org.apache.aurora.common.quantity.Data;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 
-import org.apache.commons.lang.ObjectUtils;
 import org.apache.mesos.Protos;
-import org.apache.mesos.Protos.Volume;
 import org.apache.mesos.Protos.CommandInfo;
 import org.apache.mesos.Protos.CommandInfo.URI;
+import org.apache.mesos.Protos.Volume;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

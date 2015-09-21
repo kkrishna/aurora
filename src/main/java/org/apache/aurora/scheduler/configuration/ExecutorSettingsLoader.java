@@ -17,25 +17,22 @@ package org.apache.aurora.scheduler.configuration;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Maps.EntryTransformer;
 import com.google.common.io.Files;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 
-import org.apache.aurora.common.quantity.Data;
 import org.apache.aurora.common.quantity.Amount;
+import org.apache.aurora.common.quantity.Data;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.mesos.ExecutorSettings;
 import org.apache.mesos.Protos.CommandInfo;
@@ -43,7 +40,7 @@ import org.apache.mesos.Protos.Volume;
 
 /**
  * Loads configuration file for executors from a JSON file
- * returns a map that can be used to dynamically choose executors
+ * returns a map that can be used to dynamically choose executors.
  */
 public final class ExecutorSettingsLoader {
 
@@ -53,7 +50,7 @@ public final class ExecutorSettingsLoader {
 
   public static ImmutableMap<String, ExecutorSettings> load(File configFile) {
 
-    Map<String, ExecutorConfig> executorSettings = ImmutableMap.of();
+    Map<String, ExecutorConfig> executorSettings;
 
     String configContents;
     try {
@@ -68,21 +65,15 @@ public final class ExecutorSettingsLoader {
     mapper.registerModule(new ProtobufModule());
 
     try {
-      executorSettings = mapper.readValue(configContents, new TypeReference<Map<String, ExecutorConfig>>() {});
+      executorSettings = mapper.readValue(configContents,
+          new TypeReference<Map<String, ExecutorConfig>>() { });
     } catch (IOException e) {
       throw Throwables.propagate(e);
-    }
-
-    for (ExecutorConfig config : executorSettings.values()) {
-      System.out.println("Executor: " + config.command.build());
-      System.out.println("Volumes: " + config.volumeMounts);
-      System.out.println("Map: " + config.config);
     }
 
     Map<String, ExecutorSettings> map = Maps.transformEntries(executorSettings, FROM_CONFIG);
     return ImmutableMap.<String, ExecutorSettings>copyOf(map);
   }
-
 
   public static class ExecutorConfig {
     public CommandInfo.Builder command;
@@ -90,7 +81,7 @@ public final class ExecutorSettingsLoader {
     public Overhead overhead;
     public Map<String, String> config = ImmutableMap.of();
 
-    static private class Overhead {
+    private static class Overhead {
       public double cpus = 0;
       public long ram = 0;
       public long disk = 0;
@@ -117,25 +108,4 @@ public final class ExecutorSettingsLoader {
               .build();
         }
       };
-
-  public static void main(String...args) {
-
-    ExecutorConfig test = new ExecutorConfig();
-    test.command = CommandInfo.newBuilder();
-    test.volumeMounts = new ArrayList<Volume>();
-    test.volumeMounts.add(Volume.newBuilder().setHostPath("host").setContainerPath("container").setMode(Volume.Mode.RW).build());
-    //test.overhead = new ResourceSlot(23.0, Amount.of(12L, Data.MB), Amount.of(230L, Data.MB), 20);
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.setPropertyNamingStrategy(
-        PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
-    mapper.registerModule(new ProtobufModule());
-
-    try {
-      mapper.writeValue(System.out, test);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    System.out.println("hello wrodl");
-
-  }
 }
