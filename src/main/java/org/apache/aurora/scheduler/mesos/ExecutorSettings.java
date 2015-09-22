@@ -14,56 +14,64 @@
 package org.apache.aurora.scheduler.mesos;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
-import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.ResourceSlot;
+import org.apache.mesos.Protos.CommandInfo;
+import org.apache.mesos.Protos.Volume;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Configuration for the executor to run, and resource overhead required for it.
  */
 public final class ExecutorSettings {
-  private final String executorPath;
-  private final List<String> executorResources;
-  private final String thermosObserverRoot;
-  private final Optional<String> executorFlags;
+  private final String executorName;
+  private final CommandInfo.Builder commandInfo;
   private final ResourceSlot executorOverhead;
   private final List<Volume> globalContainerMounts;
+  private final String thermosObserverRoot;
+  private final Map<String, String> config;
+
+  private static final String THERMOS_NAME = "AuroraExecutor";
 
   ExecutorSettings(
-      String executorPath,
-      List<String> executorResources,
+      String executorName,
+      CommandInfo.Builder commandInfo,
       String thermosObserverRoot,
-      Optional<String> executorFlags,
       ResourceSlot executorOverhead,
-      List<Volume> globalContainerMounts) {
+      List<Volume> globalContainerMounts,
+      Map<String, String> config) {
 
-    this.executorPath = requireNonNull(executorPath);
-    this.executorResources = requireNonNull(executorResources);
-    this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
-    this.executorFlags = requireNonNull(executorFlags);
+    this.executorName = executorName;
+    this.commandInfo = requireNonNull(commandInfo);
     this.executorOverhead = requireNonNull(executorOverhead);
     this.globalContainerMounts = requireNonNull(globalContainerMounts);
+    this.config = config;
+
+    if (THERMOS_NAME.equals(executorName)) {
+      this.thermosObserverRoot = requireNonNull(thermosObserverRoot);
+    } else {
+      this.thermosObserverRoot = "";
+    }
   }
 
-  public String getExecutorPath() {
-    return executorPath;
+  public String getExecutorName() {
+    return executorName;
   }
 
-  public List<String> getExecutorResources() {
-    return executorResources;
+  public CommandInfo.Builder getCommandInfo() {
+    //Must return a clone otherwise any changes to it will be passed on to new tasks
+    return commandInfo.clone();
   }
 
   public String getThermosObserverRoot() {
     return thermosObserverRoot;
-  }
-
-  public Optional<String> getExecutorFlags() {
-    return executorFlags;
   }
 
   public ResourceSlot getExecutorOverhead() {
@@ -74,42 +82,83 @@ public final class ExecutorSettings {
     return globalContainerMounts;
   }
 
+  public Map<String, String> getConfig() {
+    return config;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
 
-  public static final class Builder {
-    private String executorPath;
-    private List<String> executorResources;
-    private String thermosObserverRoot;
-    private Optional<String> executorFlags;
-    private ResourceSlot executorOverhead;
-    private List<Volume> globalContainerMounts;
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        executorName,
+        commandInfo,
+        thermosObserverRoot,
+        executorOverhead,
+        globalContainerMounts,
+        config);
+  }
 
-    Builder() {
-      executorResources = ImmutableList.of();
-      executorFlags = Optional.absent();
-      executorOverhead = ResourceSlot.NONE;
-      globalContainerMounts = ImmutableList.of();
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
     }
 
-    public Builder setExecutorPath(String executorPath) {
-      this.executorPath = executorPath;
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+
+    final ExecutorSettings that = (ExecutorSettings) obj;
+
+    return Objects.equals(executorName, that.executorName)
+        && Objects.equals(commandInfo.build(), that.commandInfo.build())
+        && Objects.equals(thermosObserverRoot, that.thermosObserverRoot)
+        && Objects.equals(executorOverhead, that.executorOverhead)
+        && Objects.equals(globalContainerMounts, that.globalContainerMounts)
+        && Objects.equals(config, that.config);
+  }
+
+  @Override
+  public String toString() {
+    return com.google.common.base.MoreObjects.toStringHelper(this)
+        .add("executorName", executorName)
+        .add("commandInfo", commandInfo)
+        .add("executorOverhead", executorOverhead)
+        .add("globalContainerMounts", globalContainerMounts)
+        .add("thermosObserverRoot", thermosObserverRoot)
+        .add("config", config)
+        .toString();
+  }
+
+  public static final class Builder {
+    private String executorName;
+    private CommandInfo.Builder commandInfo;
+    private String thermosObserverRoot;
+    private ResourceSlot executorOverhead;
+    private List<Volume> globalContainerMounts;
+    private Map<String, String> config;
+
+    Builder() {
+      executorOverhead = ResourceSlot.NONE;
+      globalContainerMounts = ImmutableList.of();
+      config = ImmutableMap.of();
+    }
+
+    public Builder setExecutorName(String executorName) {
+      this.executorName = executorName;
       return this;
     }
 
-    public Builder setExecutorResources(List<String> executorResources) {
-      this.executorResources = executorResources;
+    public Builder setCommandInfo(CommandInfo.Builder commandInfo) {
+      this.commandInfo = commandInfo;
       return this;
     }
 
     public Builder setThermosObserverRoot(String thermosObserverRoot) {
       this.thermosObserverRoot = thermosObserverRoot;
-      return this;
-    }
-
-    public Builder setExecutorFlags(Optional<String> executorFlags) {
-      this.executorFlags = executorFlags;
       return this;
     }
 
@@ -119,18 +168,25 @@ public final class ExecutorSettings {
     }
 
     public Builder setGlobalContainerMounts(List<Volume> globalContainerMounts) {
-      this.globalContainerMounts = globalContainerMounts;
+      if (nonNull(globalContainerMounts)) {
+        this.globalContainerMounts = globalContainerMounts;
+      }
+      return this;
+    }
+
+    public Builder setConfig(Map<String, String> config) {
+      this.config = config;
       return this;
     }
 
     public ExecutorSettings build() {
       return new ExecutorSettings(
-          executorPath,
-          executorResources,
+          executorName,
+          commandInfo,
           thermosObserverRoot,
-          executorFlags,
           executorOverhead,
-          globalContainerMounts);
+          globalContainerMounts,
+          config);
     }
   }
 }
