@@ -171,11 +171,13 @@ public interface MesosTaskFactory {
         ITaskConfig config,
         TaskInfo.Builder taskBuilder) {
 
-      CommandInfo commandInfo = CommandUtil.create(
+      CommandInfo commandInfo = executorSettings.getCommandInfo().build();
+
+          /*CommandUtil.create(
           executorSettings.getExecutorPath(),
           executorSettings.getExecutorResources(),
           "./",
-          executorSettings.getExecutorFlags()).build();
+          executorSettings.getExecutorFlags()).build();*/
 
       ExecutorInfo.Builder executorBuilder = configureTaskForExecutor(task, config, commandInfo);
       taskBuilder.setExecutor(executorBuilder.build());
@@ -204,11 +206,24 @@ public interface MesosTaskFactory {
       configureContainerVolumes(containerBuilder);
 
       // TODO(SteveNiemitz): Allow users to specify an executor per container type.
-      CommandInfo.Builder commandInfoBuilder = CommandUtil.create(
+
+      CommandInfo.Builder commandInfoBuilder = executorSettings.getCommandInfo();
+
+      //Environmental variable will not be expanded if shell is false.
+      //Args array is ignored if shell=true
+      //TODO(rdelvalle): Attempt to figure out a better solution for docker tasks' CommandInfo
+      String value  = "$MESOS_SANDBOX/" + commandInfoBuilder.getValue() + " "
+          + String.join(" ", commandInfoBuilder.getArgumentsList()) ;
+
+
+      commandInfoBuilder.setShell(true).setValue(value);
+
+
+          /*CommandUtil.create(
           executorSettings.getExecutorPath(),
           executorSettings.getExecutorResources(),
           "$MESOS_SANDBOX/",
-          executorSettings.getExecutorFlags());
+          executorSettings.getExecutorFlags());*/
 
       ExecutorInfo.Builder execBuilder =
           configureTaskForExecutor(task, taskConfig, commandInfoBuilder.build())
@@ -238,15 +253,7 @@ public interface MesosTaskFactory {
               .setMode(Volume.Mode.RW)
               .build());
 
-      for (org.apache.aurora.gen.Volume v : executorSettings.getGlobalContainerMounts()) {
-        // This has already been validated to be correct in ExecutorSettings().
-        containerBuilder.addVolumes(
-            Volume.newBuilder()
-                .setHostPath(v.getHostPath())
-                .setContainerPath(v.getContainerPath())
-                .setMode(Volume.Mode.valueOf(v.getMode().getValue()))
-                .build());
-      }
+      containerBuilder.addAllVolumes(executorSettings.getGlobalContainerMounts());
     }
   }
 }
