@@ -1,0 +1,38 @@
+{
+  "AuroraExecutor" : {
+    "command": {
+      "value" : "./thermos_executor.pex",
+      "arguments": [
+        "--announcer-enable",
+        "--announcer-ensemble",
+        "localhost:2181"
+      ],
+      "shell" : false,
+      "uris": [
+        {
+          "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
+          "executable": true,
+          "extract": false,
+          "cache": false
+        }
+      ]
+
+    },
+    "overhead": {
+      "cpus": 0.25,
+      "ram": 128
+    },
+    "config": {
+      "thermosObserverRoot": "/var/run/thermos"
+    }
+  },
+  "CommandExecutor": {
+    "command": {
+      "value" :"echo 'Hello World from Aurora!'"
+    },
+    "overhead": {
+      "cpus": 0.25,
+      "ram": 128
+    }
+  }
+}
