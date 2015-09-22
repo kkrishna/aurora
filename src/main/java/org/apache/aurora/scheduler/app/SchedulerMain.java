@@ -13,6 +13,7 @@
  */
 package org.apache.aurora.scheduler.app;
 
+import java.io.File;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -43,6 +44,7 @@ import org.apache.aurora.common.args.Arg;
 import org.apache.aurora.common.args.ArgScanner;
 import org.apache.aurora.common.args.ArgScanner.ArgScanException;
 import org.apache.aurora.common.args.CmdLine;
+import org.apache.aurora.common.args.constraints.CanRead;
 import org.apache.aurora.common.args.constraints.NotEmpty;
 import org.apache.aurora.common.args.constraints.NotNull;
 import org.apache.aurora.common.inject.Bindings;
@@ -58,6 +60,7 @@ import org.apache.aurora.gen.Volume;
 import org.apache.aurora.scheduler.AppStartup;
 import org.apache.aurora.scheduler.ResourceSlot;
 import org.apache.aurora.scheduler.SchedulerLifecycle;
+import org.apache.aurora.scheduler.configuration.ExecutorSettingsLoader;
 import org.apache.aurora.scheduler.cron.quartz.CronModule;
 import org.apache.aurora.scheduler.http.HttpService;
 import org.apache.aurora.scheduler.log.mesos.MesosLogStreamModule;
@@ -93,39 +96,6 @@ public class SchedulerMain {
   @CmdLine(name = "serverset_path", help = "ZooKeeper ServerSet path to register at.")
   private static final Arg<String> SERVERSET_PATH = Arg.create();
 
-  @CmdLine(name = "thermos_executor_path", help = "Path to the thermos executor entry point.")
-  private static final Arg<String> THERMOS_EXECUTOR_PATH = Arg.create();
-
-  @CmdLine(name = "thermos_executor_resources",
-      help = "A comma seperated list of additional resources to copy into the sandbox."
-          + "Note: if thermos_executor_path is not the thermos_executor.pex file itself, "
-          + "this must include it.")
-  private static final Arg<List<String>> THERMOS_EXECUTOR_RESOURCES =
-      Arg.create(ImmutableList.of());
-
-  @CmdLine(name = "thermos_executor_flags",
-      help = "Extra arguments to be passed to the thermos executor")
-  private static final Arg<String> THERMOS_EXECUTOR_FLAGS = Arg.create(null);
-
-  @CmdLine(name = "thermos_observer_root",
-      help = "Path to the thermos observer root (by default /var/run/thermos.)")
-  private static final Arg<String> THERMOS_OBSERVER_ROOT = Arg.create("/var/run/thermos");
-
-  /**
-   * Extra CPU allocated for each executor.
-   */
-  @CmdLine(name = "thermos_executor_cpu",
-      help = "The number of CPU cores to allocate for each instance of the executor.")
-  private static final Arg<Double> EXECUTOR_OVERHEAD_CPUS = Arg.create(0.25);
-
-  /**
-   * Extra RAM allocated for the executor.
-   */
-  @CmdLine(name = "thermos_executor_ram",
-      help = "The amount of RAM to allocate for each instance of the executor.")
-  private static final Arg<Amount<Long, Data>> EXECUTOR_OVERHEAD_RAM =
-      Arg.create(Amount.of(128L, Data.MB));
-
   @CmdLine(name = "extra_modules",
       help = "A list of modules that provide additional functionality.")
   private static final Arg<List<Class<? extends Module>>> EXTRA_MODULES =
@@ -135,10 +105,9 @@ public class SchedulerMain {
   @CmdLine(name = "viz_job_url_prefix", help = "URL prefix for job container stats.")
   private static final Arg<String> STATS_URL_PREFIX = Arg.create("");
 
-  @CmdLine(name = "global_container_mounts",
-      help = "A comma seperated list of mount points (in host:container form) to mount "
-          + "into all (non-mesos) containers.")
-  private static final Arg<List<Volume>> GLOBAL_CONTAINER_MOUNTS = Arg.create(ImmutableList.of());
+  @CanRead
+  @CmdLine(name = "executors_config_path", help = "Path to executor config JSON file")
+  private static final Arg<File> EXECUTORS_CONFIG_PATH = Arg.create();
 
   @Inject private SingletonService schedulerService;
   @Inject private HttpService httpService;
@@ -228,21 +197,10 @@ public class SchedulerMain {
         new AbstractModule() {
           @Override
           protected void configure() {
-            ResourceSlot executorOverhead = new ResourceSlot(
-                EXECUTOR_OVERHEAD_CPUS.get(),
-                EXECUTOR_OVERHEAD_RAM.get(),
-                Amount.of(0L, Data.MB),
-                0);
-
             bind(ExecutorSettings.class)
-                .toInstance(ExecutorSettings.newBuilder()
-                    .setExecutorPath(THERMOS_EXECUTOR_PATH.get())
-                    .setExecutorResources(THERMOS_EXECUTOR_RESOURCES.get())
-                    .setThermosObserverRoot(THERMOS_OBSERVER_ROOT.get())
-                    .setExecutorFlags(Optional.fromNullable(THERMOS_EXECUTOR_FLAGS.get()))
-                    .setExecutorOverhead(executorOverhead)
-                    .setGlobalContainerMounts(GLOBAL_CONTAINER_MOUNTS.get())
-                    .build());
+                .toInstance(ExecutorSettingsLoader.load(
+                    EXECUTORS_CONFIG_PATH.get()).get("AuroraExecutor"));
+
 
             bind(IServerInfo.class).toInstance(
                 IServerInfo.build(
