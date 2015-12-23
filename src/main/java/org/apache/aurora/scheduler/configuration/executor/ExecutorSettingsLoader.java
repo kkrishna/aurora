@@ -61,7 +61,7 @@ public final class ExecutorSettingsLoader {
    * @return An executor configuration.
    * @throws ExecutorConfigException If the input cannot be read or is not properly formatted.
    */
-  public static ExecutorConfig read(Readable input) throws ExecutorConfigException {
+  public static ImmutableList<ExecutorConfig> read(Readable input) throws ExecutorConfigException {
     String configContents;
     try {
       configContents = CharStreams.toString(input);
@@ -88,15 +88,18 @@ public final class ExecutorSettingsLoader {
           parsed.stream()
               .collect(
                   Collectors.toMap(
-                      e -> e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build()
-                      ,e -> e.volumeMounts)));
+                      e -> e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build(),
+                      e -> e.volumeMounts)));
     } catch (UninitializedMessageException e) {
       throw new ExecutorConfigException(e);
     }
 
-    return new ExecutorConfig(
-        executorInfo,
-        Optional.fromNullable(parsed.volumeMounts).or(ImmutableList.of()));
+    return ImmutableList.copyOf(
+        executorInfo.entrySet()
+            .stream()
+            .map(e -> new ExecutorConfig(e.getKey(),
+                Optional.fromNullable(e.getValue()).or(ImmutableList.of())))
+            .collect(Collectors.toList()));
   }
 
   /**
