@@ -61,7 +61,7 @@ public final class ExecutorSettingsLoader {
    * @return An executor configuration.
    * @throws ExecutorConfigException If the input cannot be read or is not properly formatted.
    */
-  public static ImmutableList<ExecutorConfig> read(Readable input) throws ExecutorConfigException {
+  public static ImmutableMap<String, ExecutorConfig> read(Readable input) throws ExecutorConfigException {
     String configContents;
     try {
       configContents = CharStreams.toString(input);
@@ -94,12 +94,14 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorConfigException(e);
     }
 
-    return ImmutableList.copyOf(
+    return ImmutableMap.copyOf(
         executorInfo.entrySet()
             .stream()
-            .map(e -> new ExecutorConfig(e.getKey(),
-                Optional.fromNullable(e.getValue()).or(ImmutableList.of())))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toMap(
+                e -> e.getKey().getName(),
+                e -> new ExecutorConfig(
+                    e.getKey(),
+                    Optional.fromNullable(e.getValue()).or(ImmutableList.of())))));
   }
 
   /**
