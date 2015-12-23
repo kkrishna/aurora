@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.protobuf.UninitializedMessageException;
 import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
@@ -78,15 +79,17 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorConfigException(e);
     }
 
-    ImmutableList<ExecutorInfo> executorInfo;
+    ImmutableMap<ExecutorInfo, List<Volume>> executorInfo;
     try {
       // We apply a placeholder value for the executor ID so that we can construct and validate
       // the protobuf schema.  This allows us to catch many validation errors here rather than
       // later on when launching tasks.
-      executorInfo = ImmutableList.copyOf(
+      executorInfo = ImmutableMap.<ExecutorInfo,List<Volume>>copyOf(
           parsed.stream()
-              .map(e -> e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build())
-              .collect(Collectors.toList()));
+              .collect(
+                  Collectors.toMap(
+                      e -> e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build()
+                      ,e -> e.volumeMounts)));
     } catch (UninitializedMessageException e) {
       throw new ExecutorConfigException(e);
     }
