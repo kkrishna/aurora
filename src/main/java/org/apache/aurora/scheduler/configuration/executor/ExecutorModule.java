@@ -19,11 +19,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.MapBinder;
 
 import org.apache.aurora.GuavaUtils;
 import org.apache.aurora.common.args.Arg;
@@ -140,6 +143,28 @@ public class ExecutorModule extends AbstractModule {
                 .addResources(makeResource(RAM_MB, EXECUTOR_OVERHEAD_RAM.get().as(Data.MB)))
                 .build(),
             volumeMounts));
+  }
+
+  private ExecutorSettings makeExcutorMapBinder() {
+    try {
+
+      MapBinder<String, ExecutorSettings> executorMapBinder = MapBinder.newMapBinder(
+          binder(),
+          String.class,
+          ExecutorSettings.class);
+
+      ExecutorSettingsLoader.read(
+              Files.newBufferedReader(
+                  CUSTOM_EXECUTOR_CONFIG.get().toPath(),
+                  StandardCharsets.UTF_8))
+          .entrySet()
+          .forEach(e -> executorMapBinder
+              .addBinding(e.getKey())
+              .toInstance(new ExecutorSettings(e.getValue())));
+
+    } catch (ExecutorSettingsLoader.ExecutorConfigException | IOException e) {
+      throw new IllegalArgumentException("Failed to read executor settings: " + e, e);
+    }
   }
 
   private static ExecutorSettings makeCustomExecutorSettings() {
