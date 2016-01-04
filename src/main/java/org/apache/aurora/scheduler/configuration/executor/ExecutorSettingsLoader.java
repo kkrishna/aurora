@@ -84,24 +84,28 @@ public final class ExecutorSettingsLoader {
       // We apply a placeholder value for the executor ID so that we can construct and validate
       // the protobuf schema.  This allows us to catch many validation errors here rather than
       // later on when launching tasks.
-      executorInfo = ImmutableMap.<ExecutorInfo,List<Volume>>copyOf(
-          parsed.stream()
-              .collect(
+      executorInfo = parsed.stream()
+          .collect(
+              Collectors.collectingAndThen(
                   Collectors.toMap(
                       e -> e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build(),
-                      e -> e.volumeMounts)));
+                      e -> e.volumeMounts),
+                  ImmutableMap::<ExecutorInfo, List<Volume>>copyOf));
     } catch (UninitializedMessageException e) {
       throw new ExecutorConfigException(e);
     }
 
-    return ImmutableMap.copyOf(
-        executorInfo.entrySet()
-            .stream()
-            .collect(Collectors.toMap(
-                e -> e.getKey().getName(),
-                e -> new ExecutorConfig(
-                    e.getKey(),
-                    Optional.fromNullable(e.getValue()).or(ImmutableList.of())))));
+    return executorInfo.entrySet()
+        .stream()
+        .collect(
+            Collectors.collectingAndThen(
+                Collectors.toMap(
+                    e -> e.getKey().getName(),
+                    e -> new ExecutorConfig(
+                        e.getKey(),
+                        Optional.fromNullable(e.getValue()).or(ImmutableList.of()))),
+                ImmutableMap::<String, ExecutorConfig>copyOf));
+
   }
 
   /**
