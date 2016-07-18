@@ -27,7 +27,6 @@ import org.apache.aurora.gen.Container;
 import org.apache.aurora.gen.Container._Fields;
 import org.apache.aurora.gen.DockerContainer;
 import org.apache.aurora.gen.DockerParameter;
-import org.apache.aurora.gen.ExecutorConfig;
 import org.apache.aurora.gen.Identity;
 import org.apache.aurora.gen.LimitConstraint;
 import org.apache.aurora.gen.MesosFetcherURI;
@@ -44,6 +43,7 @@ import org.apache.aurora.scheduler.TierManager;
 import org.apache.aurora.scheduler.TierManager.TierManagerImpl.TierConfig;
 import org.apache.aurora.scheduler.configuration.ConfigurationManager;
 import org.apache.aurora.scheduler.configuration.ConfigurationManager.ConfigurationManagerSettings;
+import org.apache.aurora.scheduler.configuration.executor.ExecutorConfig;
 import org.apache.aurora.scheduler.configuration.executor.ExecutorSettings;
 import org.apache.aurora.scheduler.storage.entities.IJobKey;
 import org.apache.aurora.scheduler.storage.entities.IScheduledTask;
@@ -84,7 +84,7 @@ public final class TaskTestUtil {
           true);
   public static final String EXECUTOR_NAME = "name";
   public static final ExecutorSettings EXECUTOR_SETTINGS = new ExecutorSettings(
-      ImmutableMap.<String, org.apache.aurora.scheduler.configuration.executor.ExecutorConfig>builder().put(EXECUTOR_NAME, null).build(), false);
+      ImmutableMap.<String, ExecutorConfig>builder().put(EXECUTOR_NAME, null).build(), false);
   public static final ConfigurationManager CONFIGURATION_MANAGER =
       new ConfigurationManager(CONFIGURATION_MANAGER_SETTINGS,
           TIER_MANAGER,
@@ -122,7 +122,7 @@ public final class TaskTestUtil {
         .setMesosFetcherUris(ImmutableSet.of(
             new MesosFetcherURI("pathA").setExtract(true).setCache(true),
             new MesosFetcherURI("pathB").setExtract(true).setCache(true)))
-        .setExecutorConfig(new ExecutorConfig(EXECUTOR_NAME, "config"))
+        .setExecutorConfig(new org.apache.aurora.gen.ExecutorConfig(EXECUTOR_NAME, "config"))
         .setContainer(Container.docker(
             new DockerContainer("imagename")
                 .setParameters(ImmutableList.of(
