@@ -44,6 +44,7 @@ import org.apache.aurora.scheduler.TierManager;
 import org.apache.aurora.scheduler.TierManager.TierManagerImpl.TierConfig;
 import org.apache.aurora.scheduler.configuration.ConfigurationManager;
 import org.apache.aurora.scheduler.configuration.ConfigurationManager.ConfigurationManagerSettings;
+import org.apache.aurora.scheduler.configuration.executor.ExecutorSettings;
 import org.apache.aurora.scheduler.storage.entities.IJobKey;
 import org.apache.aurora.scheduler.storage.entities.IScheduledTask;
 import org.apache.aurora.scheduler.storage.entities.ITaskConfig;
@@ -81,8 +82,14 @@ public final class TaskTestUtil {
           true,
           true,
           true);
+  public static final String EXECUTOR_NAME = "name";
+  public static final ExecutorSettings EXECUTOR_SETTINGS = new ExecutorSettings(
+      ImmutableMap.<String, org.apache.aurora.scheduler.configuration.executor.ExecutorConfig>builder().put(EXECUTOR_NAME, null).build(), false);
   public static final ConfigurationManager CONFIGURATION_MANAGER =
-      new ConfigurationManager(CONFIGURATION_MANAGER_SETTINGS, TIER_MANAGER, THRIFT_BACKFILL);
+      new ConfigurationManager(CONFIGURATION_MANAGER_SETTINGS,
+          TIER_MANAGER,
+          THRIFT_BACKFILL,
+          EXECUTOR_SETTINGS);
 
   private TaskTestUtil() {
     // Utility class.
@@ -115,7 +122,7 @@ public final class TaskTestUtil {
         .setMesosFetcherUris(ImmutableSet.of(
             new MesosFetcherURI("pathA").setExtract(true).setCache(true),
             new MesosFetcherURI("pathB").setExtract(true).setCache(true)))
-        .setExecutorConfig(new ExecutorConfig("name", "config"))
+        .setExecutorConfig(new ExecutorConfig(EXECUTOR_NAME, "config"))
         .setContainer(Container.docker(
             new DockerContainer("imagename")
                 .setParameters(ImmutableList.of(

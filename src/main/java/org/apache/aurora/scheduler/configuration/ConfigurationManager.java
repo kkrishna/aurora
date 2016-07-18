@@ -38,6 +38,7 @@ import org.apache.aurora.gen.TaskConstraint;
 import org.apache.aurora.scheduler.TierManager;
 import org.apache.aurora.scheduler.base.JobKeys;
 import org.apache.aurora.scheduler.base.UserProvidedStrings;
+import org.apache.aurora.scheduler.configuration.executor.ExecutorSettings;
 import org.apache.aurora.scheduler.resources.ResourceManager;
 import org.apache.aurora.scheduler.resources.ResourceType;
 import org.apache.aurora.scheduler.storage.entities.IConstraint;
@@ -138,16 +139,19 @@ public class ConfigurationManager {
   private final ConfigurationManagerSettings settings;
   private final TierManager tierManager;
   private final ThriftBackfill thriftBackfill;
+  private final ExecutorSettings executorSettings;
 
   @Inject
   public ConfigurationManager(
       ConfigurationManagerSettings settings,
       TierManager tierManager,
-      ThriftBackfill thriftBackfill) {
+      ThriftBackfill thriftBackfill,
+      ExecutorSettings executorSettings) {
 
     this.settings = requireNonNull(settings);
     this.tierManager = requireNonNull(tierManager);
     this.thriftBackfill = requireNonNull(thriftBackfill);
+    this.executorSettings = requireNonNull(executorSettings);
   }
 
   private static String getRole(IValueConstraint constraint) {
@@ -260,6 +264,13 @@ public class ConfigurationManager {
         && !(builder.isSetContainer() && builder.getContainer().isSetDocker())) {
 
       throw new TaskDescriptionException("Configuration may not be null");
+    }
+
+    // A valid executor config must exist for the executor name specified
+    if (!executorSettings.executorConfigExists(builder.getExecutorConfig().getName())) {
+      throw new TaskDescriptionException("Configuration for executor '"
+          + builder.getExecutorConfig().getName()
+          + "' not found");
     }
 
     // Maximize the usefulness of any thrown error message by checking required fields first.

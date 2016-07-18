@@ -15,15 +15,21 @@
 package org.apache.aurora.scheduler.configuration.executor;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.protobuf.UninitializedMessageException;
 import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 
+import org.apache.aurora.GuavaUtils;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.ExecutorInfo;
 import org.apache.mesos.Protos.Volume;
@@ -55,10 +61,10 @@ public final class ExecutorSettingsLoader {
    * Reads an executor configuration from a JSON-encoded source.
    *
    * @param input The configuration data source.
-   * @return An executor configuration.
+   * @return An map of executor configurations.
    * @throws ExecutorConfigException If the input cannot be read or is not properly formatted.
    */
-  public static ExecutorConfig read(Readable input) throws ExecutorConfigException {
+  public static Map<String, ExecutorConfig> read(Readable input) throws ExecutorConfigException {
     String configContents;
     try {
       configContents = CharStreams.toString(input);
@@ -69,26 +75,26 @@ public final class ExecutorSettingsLoader {
     ObjectMapper mapper = new ObjectMapper()
         .registerModule(new ProtobufModule())
         .setPropertyNamingStrategy(CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
-    Schema parsed;
+    List<Schema> parsed;
     try {
-      parsed = mapper.readValue(configContents, Schema.class);
+      parsed = mapper.readValue(configContents, new TypeReference<List<Schema>>(){});
     } catch (IOException e) {
       throw new ExecutorConfigException(e);
     }
 
-    ExecutorInfo executorInfo;
+    Map<String, ExecutorConfig> multiExecutors = new HashMap<String, ExecutorConfig>();
     try {
       // We apply a placeholder value for the executor ID so that we can construct and validate
       // the protobuf schema.  This allows us to catch many validation errors here rather than
       // later on when launching tasks.
-      executorInfo = parsed.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build();
+      parsed.forEach((e) -> multiExecutors.put(e.getExecutor().getName(),
+          new ExecutorConfig(e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build(),
+              Optional.fromNullable(e.volumeMounts).or(ImmutableList.of()))   ));
     } catch (UninitializedMessageException e) {
       throw new ExecutorConfigException(e);
     }
 
-    return new ExecutorConfig(
-        executorInfo,
-        Optional.fromNullable(parsed.volumeMounts).or(ImmutableList.of()));
+    return multiExecutors;
   }
 
   /**

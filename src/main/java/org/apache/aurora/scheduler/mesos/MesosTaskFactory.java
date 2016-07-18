@@ -143,13 +143,14 @@ public interface MesosTaskFactory {
       requireNonNull(offer);
 
       ITaskConfig config = task.getTask();
+      String executorName = config.getExecutorConfig().getName();
       AcceptedOffer acceptedOffer;
       // TODO(wfarner): Re-evaluate if/why we need to continue handling unset assignedPorts field.
       try {
         acceptedOffer = AcceptedOffer.create(
             offer,
             task,
-            executorSettings.getExecutorOverhead(),
+            executorSettings.getExecutorOverhead(executorName),
             tierManager.getTier(task.getTask()));
       } catch (ResourceManager.InsufficientResourcesException e) {
         throw new SchedulerException(e);
@@ -176,6 +177,7 @@ public interface MesosTaskFactory {
         ExecutorInfo.Builder executorInfoBuilder = configureTaskForExecutor(task, acceptedOffer);
 
         Optional<ContainerInfo.Builder> containerInfoBuilder = configureTaskForImage(
+            task,
             task.getTask().getContainer().getMesos());
         if (containerInfoBuilder.isPresent()) {
           executorInfoBuilder.setContainer(containerInfoBuilder.get());
@@ -186,11 +188,11 @@ public interface MesosTaskFactory {
         IDockerContainer dockerContainer = config.getContainer().getDocker();
         if (config.isSetExecutorConfig()) {
           ExecutorInfo.Builder execBuilder = configureTaskForExecutor(task, acceptedOffer)
-              .setContainer(getDockerContainerInfo(dockerContainer));
+              .setContainer(getDockerContainerInfo(task, dockerContainer));
           taskBuilder.setExecutor(execBuilder.build());
         } else {
           LOG.warn("Running Docker-based task without an executor.");
-          taskBuilder.setContainer(getDockerContainerInfo(dockerContainer))
+          taskBuilder.setContainer(getDockerContainerInfo(task, dockerContainer))
               .setCommand(CommandInfo.newBuilder().setShell(false));
         }
       } else {
@@ -203,7 +205,9 @@ public interface MesosTaskFactory {
       return taskBuilder.build();
     }
 
-    private Optional<ContainerInfo.Builder> configureTaskForImage(IMesosContainer mesosContainer) {
+    private Optional<ContainerInfo.Builder> configureTaskForImage(
+        IAssignedTask task,
+        IMesosContainer mesosContainer) {
       requireNonNull(mesosContainer);
 
       if (mesosContainer.isSetImage()) {
@@ -236,13 +240,14 @@ public interface MesosTaskFactory {
         return Optional.of(ContainerInfo.newBuilder()
             .setType(ContainerInfo.Type.MESOS)
             .setMesos(mesosContainerBuilder)
-            .addAllVolumes(executorSettings.getExecutorConfig().getVolumeMounts()));
+            .addAllVolumes(executorSettings.getExecutorConfig(getExecutorName(task))
+                .getVolumeMounts()));
       }
 
       return Optional.absent();
     }
 
-    private ContainerInfo getDockerContainerInfo(IDockerContainer config) {
+    private ContainerInfo getDockerContainerInfo(IAssignedTask task, IDockerContainer config) {
       Iterable<Protos.Parameter> parameters = Iterables.transform(config.getParameters(),
           item -> Protos.Parameter.newBuilder().setKey(item.getName())
             .setValue(item.getValue()).build());
@@ -252,7 +257,7 @@ public interface MesosTaskFactory {
       return ContainerInfo.newBuilder()
           .setType(ContainerInfo.Type.DOCKER)
           .setDocker(dockerBuilder.build())
-          .addAllVolumes(executorSettings.getExecutorConfig().getVolumeMounts())
+          .addAllVolumes(executorSettings.getExecutorConfig(getExecutorName(task)).getVolumeMounts())
           .build();
     }
 
@@ -260,7 +265,10 @@ public interface MesosTaskFactory {
         IAssignedTask task,
         AcceptedOffer acceptedOffer) {
 
-      ExecutorInfo.Builder builder = executorSettings.getExecutorConfig().getExecutor().toBuilder()
+      ExecutorInfo.Builder builder =
+          executorSettings.getExecutorConfig(getExecutorName(task))
+          .getExecutor()
+          .toBuilder()
           .setExecutorId(getExecutorId(task.getTaskId()))
           .setSource(getInstanceSourceName(task.getTask(), task.getInstanceId()));
 
@@ -310,6 +318,11 @@ public interface MesosTaskFactory {
                 .setProtocol(DEFAULT_PORT_PROTOCOL)
         );
       }
+    }
+
+
+    private static String getExecutorName(IAssignedTask task) {
+      return task.getTask().getExecutorConfig().getName();
     }
   }
 }

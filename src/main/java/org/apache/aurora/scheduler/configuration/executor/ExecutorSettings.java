@@ -13,6 +13,8 @@
  */
 package org.apache.aurora.scheduler.configuration.executor;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Objects;
 
 import org.apache.aurora.scheduler.resources.ResourceBag;
@@ -24,26 +26,30 @@ import static java.util.Objects.requireNonNull;
  * Configuration for the executor to run, and resource overhead required for it.
  */
 public class ExecutorSettings {
-  private final ExecutorConfig config;
+  private final ImmutableMap<String, ExecutorConfig> config;
   private final boolean populateDiscoveryInfo;
 
-  public ExecutorSettings(ExecutorConfig config, boolean populateDiscoveryInfo) {
+  public ExecutorSettings(ImmutableMap<String,ExecutorConfig> config, boolean populateDiscoveryInfo) {
     this.config = requireNonNull(config);
     this.populateDiscoveryInfo = populateDiscoveryInfo;
   }
 
-  public ExecutorConfig getExecutorConfig() {
+  public ExecutorConfig getExecutorConfig(String name) {
     // TODO(wfarner): Replace this with a generic name-based accessor once tasks can specify the
     // executor they wish to use.
-    return config;
+    return config.get(name);
+  }
+
+  public boolean executorConfigExists(String name) {
+    return config.containsKey(name);
   }
 
   public boolean shouldPopulateDiscoverInfo() {
     return populateDiscoveryInfo;
   }
 
-  public ResourceBag getExecutorOverhead() {
-    return ResourceManager.bagFromMesosResources(config.getExecutor().getResourcesList());
+  public ResourceBag getExecutorOverhead(String name) {
+    return ResourceManager.bagFromMesosResources(config.get(name).getExecutor().getResourcesList());
   }
 
   @Override

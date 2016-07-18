@@ -144,7 +144,8 @@ public interface TaskScheduler extends EventSubscriber {
             store,
             new ResourceRequest(
                 task,
-                bagFromResources(task.getResources()).add(executorSettings.getExecutorOverhead()),
+                bagFromResources(task.getResources()).add(
+                    executorSettings.getExecutorOverhead(task.getExecutorConfig().getName())),
                 aggregate),
             TaskGroupKey.from(task),
             taskId,
