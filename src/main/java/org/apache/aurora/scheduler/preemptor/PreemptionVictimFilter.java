@@ -121,7 +121,7 @@ public interface PreemptionVictimFilter {
 
             // TODO(rdelvalle): Consider filtering non-revocable resources from executor overhead
 
-            // If executor config can't be found, don't make resources available for revoking larger
+            // If executor config can't be found, be pessimistic about revocable resource available
             return bag.add(executorSettings.getExecutorOverhead(
                 victim.getConfig().getExecutorConfig().getName()).orElse(ResourceBag.EMPTY));
           }
@@ -202,6 +202,11 @@ public interface PreemptionVictimFilter {
         return Optional.absent();
       }
 
+      // Scheduler may have been restarted and executor config may not be available anymore
+      if (!executorSettings.executorConfigExists(pendingTask.getExecutorConfig().getName())) {
+        return Optional.absent();
+      }
+
       ResourceBag totalResource = slackResources;
       for (PreemptionVictim victim : sortedVictims) {
         toPreemptTasks.add(victim);
@@ -212,7 +217,7 @@ public interface PreemptionVictimFilter {
                 pendingTask,
                 ResourceManager.bagFromResources(pendingTask.getResources())
                     .add(executorSettings.getExecutorOverhead(
-                        pendingTask.getExecutorConfig().getName())),
+                        pendingTask.getExecutorConfig().getName()).get()),
                 jobState));
 
         if (vetoes.isEmpty()) {
