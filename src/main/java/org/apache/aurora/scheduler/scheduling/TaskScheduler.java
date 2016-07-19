@@ -36,6 +36,7 @@ import org.apache.aurora.scheduler.filter.AttributeAggregate;
 import org.apache.aurora.scheduler.filter.SchedulingFilter.ResourceRequest;
 import org.apache.aurora.scheduler.preemptor.BiCache;
 import org.apache.aurora.scheduler.preemptor.Preemptor;
+import org.apache.aurora.scheduler.resources.ResourceBag;
 import org.apache.aurora.scheduler.state.TaskAssigner;
 import org.apache.aurora.scheduler.storage.Storage;
 import org.apache.aurora.scheduler.storage.Storage.MutableStoreProvider;
@@ -134,8 +135,14 @@ public interface TaskScheduler extends EventSubscriber {
               IScheduledTask::getAssignedTask),
           null);
 
+      String executorName = assignedTask.getTask().getExecutorConfig().getName();
       if (assignedTask == null) {
         LOG.warn("Failed to look up task " + taskId + ", it may have been deleted.");
+      } else if (!executorSettings.executorConfigExists(executorName)) {
+        LOG.warn("Cannot find executor configuration "
+            + executorName
+            + " for task "
+            + taskId + ".");
       } else {
         ITaskConfig task = assignedTask.getTask();
         AttributeAggregate aggregate = AttributeAggregate.getJobActiveState(store, task.getJob());
@@ -145,7 +152,7 @@ public interface TaskScheduler extends EventSubscriber {
             new ResourceRequest(
                 task,
                 bagFromResources(task.getResources()).add(
-                    executorSettings.getExecutorOverhead(task.getExecutorConfig().getName())),
+                    executorSettings.getExecutorOverhead(task.getExecutorConfig().getName()).get()),
                 aggregate),
             TaskGroupKey.from(task),
             taskId,
