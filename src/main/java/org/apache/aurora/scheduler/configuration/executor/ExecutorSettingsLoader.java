@@ -82,17 +82,23 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorConfigException(e);
     }
 
-    Map<String, ExecutorConfig> multiExecutors = new HashMap<String, ExecutorConfig>();
+    Map<ExecutorInfo, List<Volume>> executorInfos = new HashMap<ExecutorInfo, List<Volume>>();
     try {
       // We apply a placeholder value for the executor ID so that we can construct and validate
       // the protobuf schema.  This allows us to catch many validation errors here rather than
       // later on when launching tasks.
-      parsed.forEach((e) -> multiExecutors.put(e.getExecutor().getName(),
-          new ExecutorConfig(e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build(),
-              Optional.fromNullable(e.volumeMounts).or(ImmutableList.of()))   ));
+
+      // Build ExecutorInfo first to let Protobuf validate data
+      parsed.forEach((e) -> executorInfos.put(
+          e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build(),
+          e.volumeMounts));
     } catch (UninitializedMessageException e) {
       throw new ExecutorConfigException(e);
     }
+
+    Map<String, ExecutorConfig> multiExecutors = new HashMap<String, ExecutorConfig>();
+    executorInfos.forEach((e,v) -> multiExecutors.put(e.getName(),
+        new ExecutorConfig(e, Optional.fromNullable(v).or(ImmutableList.of()))));
 
     return multiExecutors;
   }
