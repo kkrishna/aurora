@@ -15,8 +15,11 @@ package org.apache.aurora.scheduler.configuration.executor;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 
+import org.apache.aurora.scheduler.base.SchedulerException;
 import org.apache.aurora.scheduler.resources.ResourceBag;
 import org.apache.aurora.scheduler.resources.ResourceManager;
 
@@ -35,8 +38,6 @@ public class ExecutorSettings {
   }
 
   public ExecutorConfig getExecutorConfig(String name) {
-    // TODO(wfarner): Replace this with a generic name-based accessor once tasks can specify the
-    // executor they wish to use.
     return config.get(name);
   }
 
@@ -48,8 +49,9 @@ public class ExecutorSettings {
     return populateDiscoveryInfo;
   }
 
-  public ResourceBag getExecutorOverhead(String name) {
-    return ResourceManager.bagFromMesosResources(config.get(name).getExecutor().getResourcesList());
+  public Optional<ResourceBag> getExecutorOverhead(String name) {
+      return Optional.ofNullable(ResourceManager.bagFromMesosResources(
+          config.get(name).getExecutor().getResourcesList()));
   }
 
   @Override
