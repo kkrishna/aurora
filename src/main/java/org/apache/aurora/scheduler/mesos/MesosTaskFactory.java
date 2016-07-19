@@ -15,6 +15,7 @@ package org.apache.aurora.scheduler.mesos;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,7 @@ import com.google.protobuf.ByteString;
 import org.apache.aurora.GuavaUtils;
 import org.apache.aurora.Protobufs;
 import org.apache.aurora.codec.ThriftBinaryCodec;
+import org.apache.aurora.gen.apiConstants;
 import org.apache.aurora.scheduler.TierManager;
 import org.apache.aurora.scheduler.base.JobKeys;
 import org.apache.aurora.scheduler.base.SchedulerException;
@@ -106,8 +108,13 @@ public interface MesosTaskFactory {
     }
 
     @VisibleForTesting
-    static ExecutorID getExecutorId(String taskId) {
-      return ExecutorID.newBuilder().setValue(EXECUTOR_PREFIX + taskId).build();
+    static ExecutorID getExecutorId(String taskId, String executorName) {
+
+      if(executorName.equals(apiConstants.AURORA_EXECUTOR_NAME)) {
+        return ExecutorID.newBuilder().setValue(EXECUTOR_PREFIX + taskId).build();
+      } else {
+        return ExecutorID.newBuilder().setValue(executorName + "-" + taskId).build();
+      }
     }
 
     private static String getJobSourceName(IJobKey jobkey) {
@@ -150,9 +157,9 @@ public interface MesosTaskFactory {
         acceptedOffer = AcceptedOffer.create(
             offer,
             task,
-            executorSettings.getExecutorOverhead(executorName),
+            executorSettings.getExecutorOverhead(executorName).get(),
             tierManager.getTier(task.getTask()));
-      } catch (ResourceManager.InsufficientResourcesException e) {
+      } catch (ResourceManager.InsufficientResourcesException | NoSuchElementException e) {
         throw new SchedulerException(e);
       }
       Iterable<Resource> resources = acceptedOffer.getTaskResources();
@@ -199,8 +206,12 @@ public interface MesosTaskFactory {
         throw new SchedulerException("Task had no supported container set.");
       }
 
-      if (taskBuilder.hasExecutor()) {
+      if (taskBuilder.hasExecutor() &&
+          taskBuilder.getName().equals(apiConstants.AURORA_EXECUTOR_NAME)) {
+
         taskBuilder.setData(ByteString.copyFrom(serializeTask(task)));
+      } else if (taskBuilder.hasExecutor()) {
+        taskBuilder.setData(ByteString.copyFromUtf8(task.getTask().getExecutorConfig().getData()));
       }
       return taskBuilder.build();
     }
@@ -269,7 +280,7 @@ public interface MesosTaskFactory {
           executorSettings.getExecutorConfig(getExecutorName(task))
           .getExecutor()
           .toBuilder()
-          .setExecutorId(getExecutorId(task.getTaskId()))
+          .setExecutorId(getExecutorId(task.getTaskId(), getExecutorName(task)))
           .setSource(getInstanceSourceName(task.getTask(), task.getInstanceId()));
 
       //TODO: (rdelvalle) add output_file when Aurora's Mesos dep is updated (MESOS-4735)
