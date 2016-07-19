@@ -118,7 +118,12 @@ public interface PreemptionVictimFilter {
               // resource. We can still use RAM, DISK and PORTS as they are not compressible.
               bag = bag.filter(IS_MESOS_REVOCABLE.negate());
             }
-            return bag.add(executorSettings.getExecutorOverhead());
+
+            // TODO(rdelvalle): Consider filtering non-revocable resources from executor overhead
+
+            // If executor config can't be found, don't make resources available for revoking larger
+            return bag.add(executorSettings.getExecutorOverhead(
+                victim.getConfig().getExecutorConfig().getName()).orElse(ResourceBag.EMPTY));
           }
         };
 
@@ -206,7 +211,8 @@ public interface PreemptionVictimFilter {
             new ResourceRequest(
                 pendingTask,
                 ResourceManager.bagFromResources(pendingTask.getResources())
-                    .add(executorSettings.getExecutorOverhead()),
+                    .add(executorSettings.getExecutorOverhead(
+                        pendingTask.getExecutorConfig().getName())),
                 jobState));
 
         if (vetoes.isEmpty()) {
