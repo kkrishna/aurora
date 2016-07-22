@@ -1,48 +1,50 @@
-{
-  "executor": {
-    "name": "thermos",
-    "command": {
-      "value": "thermos_executor.pex",
-      "arguments": [
-        "--announcer-ensemble",
-        "localhost:2181"
-      ],
-      "uris": [
+[
+  {
+    "executor": {
+      "name": "thermos",
+      "command": {
+        "value": "thermos_executor.pex",
+        "arguments": [
+          "--announcer-ensemble",
+          "localhost:2181"
+        ],
+        "uris": [
+          {
+            "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
+            "executable": true,
+            "extract": false,
+            "cache": false
+          }
+        ]
+      },
+      "resources": [
         {
-          "value": "/home/vagrant/aurora/dist/thermos_executor.pex",
-          "executable": true,
-          "extract": false,
-          "cache": false
+          "name": "cpus",
+          "type": "SCALAR",
+          "scalar": {
+            "value": 0.25
+          }
+        },
+        {
+          "name": "mem",
+          "type": "SCALAR",
+          "scalar": {
+            "value": 128
+          }
         }
       ]
     },
-    "resources": [
+    "volume_mounts": [
       {
-        "name": "cpus",
-        "type": "SCALAR",
-        "scalar": {
-          "value": 0.25
-        }
+        "mode": "RO",
+        "container_path": "/path/to/observer_root",
+        "host_path": "/path/to/observer_root"
       },
       {
-        "name": "mem",
-        "type": "SCALAR",
-        "scalar": {
-          "value": 128
-        }
+        "mode": "RW",
+        "container_path": "/container",
+        "host_path": "/host"
       }
     ]
-  },
-  "volume_mounts": [
-    {
-      "mode": "RO",
-      "container_path": "/path/to/observer_root",
-      "host_path": "/path/to/observer_root"
-    },
-    {
-      "mode": "RW",
-      "container_path": "/container",
-      "host_path": "/host"
-    }
-  ]
-}
+  }
+]
