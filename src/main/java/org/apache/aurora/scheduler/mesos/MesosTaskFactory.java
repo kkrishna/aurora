@@ -87,7 +87,8 @@ public interface MesosTaskFactory {
     private static final String EXECUTOR_PREFIX = "thermos-";
 
     @VisibleForTesting
-    static final String METADATA_LABEL_PREFIX = "org.apache.aurora.metadata.";
+    //static final String METADATA_LABEL_PREFIX = "org.apache.aurora.metadata.";
+    static final String METADATA_LABEL_PREFIX = "";
 
     @VisibleForTesting
     static final String DEFAULT_PORT_PROTOCOL = "TCP";
@@ -207,8 +208,7 @@ public interface MesosTaskFactory {
       }
 
       if (taskBuilder.hasExecutor() &&
-          taskBuilder.getName().equals(apiConstants.AURORA_EXECUTOR_NAME)) {
-
+          task.getTask().getExecutorConfig().getName().equals(apiConstants.AURORA_EXECUTOR_NAME)) {
         taskBuilder.setData(ByteString.copyFrom(serializeTask(task)));
       } else if (taskBuilder.hasExecutor()) {
         taskBuilder.setData(ByteString.copyFromUtf8(task.getTask().getExecutorConfig().getData()));
