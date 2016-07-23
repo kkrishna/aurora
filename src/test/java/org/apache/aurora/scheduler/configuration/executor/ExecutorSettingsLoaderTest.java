@@ -15,6 +15,7 @@ package org.apache.aurora.scheduler.configuration.executor;
 
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.Map;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
@@ -28,6 +29,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class ExecutorSettingsLoaderTest {
+  private static final String EXECUTOR_NAME = "thermos";
   private static final ExecutorConfig THERMOS_CONFIG = new ExecutorConfig(
       TestExecutorSettings.THERMOS_CONFIG.getExecutor(),
       ImmutableList.of(
@@ -42,7 +44,7 @@ public class ExecutorSettingsLoaderTest {
               .setMode(Mode.RW)
               .build()));
 
-  private ExecutorConfig loadResource(String name) throws ExecutorConfigException {
+  private Map<String, ExecutorConfig> loadResource(String name) throws ExecutorConfigException {
     return ExecutorSettingsLoader.read(
         new InputStreamReader(getClass().getResourceAsStream(name), Charsets.UTF_8));
   }
@@ -50,7 +52,7 @@ public class ExecutorSettingsLoaderTest {
   private void assertParsedResult(ExecutorConfig expected, String file)
       throws ExecutorConfigException {
 
-    assertEquals(expected, loadResource(file));
+    assertEquals(expected, loadResource(file).get(EXECUTOR_NAME));
   }
 
   @Test

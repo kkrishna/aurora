@@ -635,6 +635,7 @@ public class SchedulingFilterImplTest extends EasyMockTest {
 
   private ResourceBag bag(ITaskConfig task) {
     return ResourceManager.bagFromResources(task.getResources())
-        .add(TaskExecutors.NO_OVERHEAD_EXECUTOR.getExecutorOverhead());
+        .add(TaskExecutors.NO_OVERHEAD_EXECUTOR
+            .getExecutorOverhead(task.getExecutorConfig().getName()).get());
   }
 }
