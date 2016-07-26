@@ -89,8 +89,7 @@ public interface MesosTaskFactory {
     private static final String EXECUTOR_PREFIX = "thermos-";
 
     @VisibleForTesting
-    //static final String METADATA_LABEL_PREFIX = "org.apache.aurora.metadata.";
-    static final String METADATA_LABEL_PREFIX = "";
+    static final String METADATA_LABEL_PREFIX = "org.apache.aurora.metadata.";
 
     @VisibleForTesting
     static final String DEFAULT_PORT_PROTOCOL = "TCP";
@@ -113,7 +112,7 @@ public interface MesosTaskFactory {
     @VisibleForTesting
     static ExecutorID getExecutorId(String taskId, String executorName) {
 
-      if(executorName.equals(apiConstants.AURORA_EXECUTOR_NAME)) {
+      if (executorName.equals(apiConstants.AURORA_EXECUTOR_NAME)) {
         return ExecutorID.newBuilder().setValue(EXECUTOR_PREFIX + taskId).build();
       } else {
         return ExecutorID.newBuilder().setValue(executorName + "-" + taskId).build();
@@ -154,15 +153,14 @@ public interface MesosTaskFactory {
 
       ITaskConfig config = task.getTask();
 
-
       ResourceBag executorOverhead = ResourceBag.EMPTY; // Docker tasks don't need executors
-      if(config.isSetExecutorConfig()) {
+      if (config.isSetExecutorConfig()) {
         // If an executor config is provided, the configuration must exist for the executor chosen.
         try {
           executorOverhead = executorSettings.getExecutorOverhead(
               config.getExecutorConfig().getName()).get();
         } catch (NoSuchElementException e) {
-         throw new SchedulerException(e);
+          throw new SchedulerException(e);
         }
       }
 
@@ -221,8 +219,12 @@ public interface MesosTaskFactory {
         throw new SchedulerException("Task had no supported container set.");
       }
 
-      if (taskBuilder.hasExecutor() &&
-          task.getTask().getExecutorConfig().getName().equals(apiConstants.AURORA_EXECUTOR_NAME)) {
+      if (taskBuilder.hasExecutor()
+          && task.getTask()
+              .getExecutorConfig()
+              .getName()
+              .equals(apiConstants.AURORA_EXECUTOR_NAME)) {
+
         taskBuilder.setData(ByteString.copyFrom(serializeTask(task)));
       } else if (taskBuilder.hasExecutor()) {
         taskBuilder.setData(ByteString.copyFromUtf8(task.getTask().getExecutorConfig().getData()));
@@ -283,9 +285,9 @@ public interface MesosTaskFactory {
           .setType(ContainerInfo.Type.DOCKER)
           .setDocker(dockerBuilder.build())
           .addAllVolumes(
-              task.getTask().isSetExecutorConfig() ?
-                  executorSettings.getExecutorConfig(getExecutorName(task)).getVolumeMounts() :
-                  ImmutableList.of())
+              task.getTask().isSetExecutorConfig()
+                  ? executorSettings.getExecutorConfig(getExecutorName(task)).getVolumeMounts()
+                  : ImmutableList.of())
           .build();
     }
 
@@ -347,7 +349,6 @@ public interface MesosTaskFactory {
         );
       }
     }
-
 
     private static String getExecutorName(IAssignedTask task) {
       return task.getTask().getExecutorConfig().getName();

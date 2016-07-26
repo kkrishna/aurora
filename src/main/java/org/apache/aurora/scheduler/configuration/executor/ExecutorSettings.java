@@ -13,10 +13,10 @@
  */
 package org.apache.aurora.scheduler.configuration.executor;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.util.Objects;
 import java.util.Optional;
+
+import com.google.common.collect.ImmutableMap;
 
 import org.apache.aurora.scheduler.resources.ResourceBag;
 import org.apache.aurora.scheduler.resources.ResourceManager;
@@ -30,7 +30,7 @@ public class ExecutorSettings {
   private final ImmutableMap<String, ExecutorConfig> config;
   private final boolean populateDiscoveryInfo;
 
-  public ExecutorSettings(ImmutableMap<String,ExecutorConfig> config,
+  public ExecutorSettings(ImmutableMap<String, ExecutorConfig> config,
                           boolean populateDiscoveryInfo) {
 
     this.config = requireNonNull(config);
@@ -50,8 +50,8 @@ public class ExecutorSettings {
   }
 
   public Optional<ResourceBag> getExecutorOverhead(String name) {
-      return Optional.ofNullable(ResourceManager.bagFromMesosResources(
-          config.get(name).getExecutor().getResourcesList()));
+    return Optional.ofNullable(ResourceManager.bagFromMesosResources(
+        config.get(name).getExecutor().getResourcesList()));
   }
 
   @Override

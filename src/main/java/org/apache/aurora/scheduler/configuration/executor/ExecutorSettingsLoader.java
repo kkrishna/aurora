@@ -18,18 +18,15 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.protobuf.UninitializedMessageException;
 import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 
-import org.apache.aurora.GuavaUtils;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.ExecutorInfo;
 import org.apache.mesos.Protos.Volume;
@@ -77,7 +74,7 @@ public final class ExecutorSettingsLoader {
         .setPropertyNamingStrategy(CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
     List<Schema> parsed;
     try {
-      parsed = mapper.readValue(configContents, new TypeReference<List<Schema>>(){});
+      parsed = mapper.readValue(configContents, new TypeReference<List<Schema>>() { });
     } catch (IOException e) {
       throw new ExecutorConfigException(e);
     }
@@ -97,7 +94,7 @@ public final class ExecutorSettingsLoader {
     }
 
     Map<String, ExecutorConfig> multiExecutors = new HashMap<String, ExecutorConfig>();
-    executorInfos.forEach((e,v) -> multiExecutors.put(e.getName(),
+    executorInfos.forEach((e, v) -> multiExecutors.put(e.getName(),
         new ExecutorConfig(e, Optional.fromNullable(v).or(ImmutableList.of()))));
 
     return multiExecutors;

@@ -67,7 +67,9 @@ public final class TestExecutorSettings {
       new ExecutorConfig(THERMOS_EXECUTOR_INFO, ImmutableList.of());
 
   public static final ExecutorSettings THERMOS_EXECUTOR = new ExecutorSettings(
-      ImmutableMap.<String,ExecutorConfig>builder().put(apiConstants.AURORA_EXECUTOR_NAME, THERMOS_CONFIG).build(),
+      ImmutableMap.<String, ExecutorConfig>builder()
+          .put(apiConstants.AURORA_EXECUTOR_NAME, THERMOS_CONFIG)
+          .build(),
       false /* populate discovery info */);
 
   public static ExecutorSettings thermosOnlyWithOverhead(Iterable<Resource> resources) {
@@ -75,7 +77,7 @@ public final class TestExecutorSettings {
     ExecutorInfo.Builder executor = config.getExecutor().toBuilder();
     executor.clearResources().addAllResources(resources);
     return new ExecutorSettings(
-        ImmutableMap.<String,ExecutorConfig>builder().put(
+        ImmutableMap.<String, ExecutorConfig>builder().put(
             apiConstants.AURORA_EXECUTOR_NAME,
             new ExecutorConfig(executor.build(), config.getVolumeMounts())).build(),
         false /* populate discovery info */);

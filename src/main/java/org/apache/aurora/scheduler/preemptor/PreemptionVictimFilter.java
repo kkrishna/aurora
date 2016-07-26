@@ -123,7 +123,7 @@ public interface PreemptionVictimFilter {
 
             // If executor config can't be found, be pessimistic about revocable resource available
             return bag.add(executorSettings.getExecutorOverhead(
-                victim.getConfig().getExecutorConfig().getName()).orElse(ResourceBag.EMPTY));
+                victim.getConfig().getExecutorConfig().getName()).orElse(EMPTY));
           }
         };
 

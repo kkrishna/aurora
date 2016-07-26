@@ -153,7 +153,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   private static ExecutorInfo populateDynamicFields(ExecutorInfo executor, IAssignedTask task) {
     return executor.toBuilder()
         .clearResources()
-        .setExecutorId(MesosTaskFactoryImpl.getExecutorId(task.getTaskId(),executor.getName()))
+        .setExecutorId(MesosTaskFactoryImpl.getExecutorId(task.getTaskId(), executor.getName()))
         .setSource(
             MesosTaskFactoryImpl.getInstanceSourceName(task.getTask(), task.getInstanceId()))
         .setCommand(executor.getCommand().toBuilder().addAllUris(

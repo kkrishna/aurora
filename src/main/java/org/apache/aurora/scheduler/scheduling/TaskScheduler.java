@@ -36,7 +36,6 @@ import org.apache.aurora.scheduler.filter.AttributeAggregate;
 import org.apache.aurora.scheduler.filter.SchedulingFilter.ResourceRequest;
 import org.apache.aurora.scheduler.preemptor.BiCache;
 import org.apache.aurora.scheduler.preemptor.Preemptor;
-import org.apache.aurora.scheduler.resources.ResourceBag;
 import org.apache.aurora.scheduler.state.TaskAssigner;
 import org.apache.aurora.scheduler.storage.Storage;
 import org.apache.aurora.scheduler.storage.Storage.MutableStoreProvider;
@@ -135,12 +134,14 @@ public interface TaskScheduler extends EventSubscriber {
               IScheduledTask::getAssignedTask),
           null);
 
-
       if (assignedTask == null) {
         LOG.warn("Failed to look up task " + taskId + ", it may have been deleted.");
-      } else if (assignedTask.getTask().isSetExecutorConfig()  &&
-          !executorSettings.executorConfigExists(
-              assignedTask.getTask().getExecutorConfig().getName())) {
+      } else if (assignedTask.getTask().isSetExecutorConfig()
+          && !executorSettings.executorConfigExists(
+              assignedTask.getTask()
+                  .getExecutorConfig()
+                  .getName())) {
+
         LOG.warn("Cannot find executor configuration "
             + assignedTask.getTask().getExecutorConfig().getName()
             + " for task "
