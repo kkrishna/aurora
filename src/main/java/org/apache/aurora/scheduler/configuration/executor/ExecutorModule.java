@@ -149,7 +149,7 @@ public class ExecutorModule extends AbstractModule {
 
     return new ExecutorConfig(
             ExecutorInfo.newBuilder()
-                .setName("aurora.task")
+                .setName(apiConstants.AURORA_EXECUTOR_NAME)
                 // Necessary as executorId is a required field.
                 .setExecutorId(Executors.PLACEHOLDER_EXECUTOR_ID)
                 .setCommand(
