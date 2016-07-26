@@ -416,7 +416,7 @@ public class SchedulerThriftInterfaceTest extends EasyMockTest {
   }
 
   @Test
-  public void testCreateJobFailsNoExecutorConfig() throws Exception {
+  public void testCreateJobFailsNoExecutorOrContainerConfig() throws Exception {
     JobConfiguration job = makeJob();
     job.getTaskConfig().unsetExecutorConfig();
 
