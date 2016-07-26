@@ -17,9 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -28,16 +26,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
 
 import org.apache.aurora.GuavaUtils;
-import org.apache.aurora.common.args.Arg;
-import org.apache.aurora.common.args.CmdLine;
-import org.apache.aurora.common.args.constraints.CanRead;
-import org.apache.aurora.common.args.constraints.Exists;
-import org.apache.aurora.common.base.MorePreconditions;
-import org.apache.aurora.common.quantity.Amount;
-import org.apache.aurora.common.quantity.Data;
 import org.apache.aurora.gen.Volume;
 import org.apache.aurora.gen.apiConstants;
 import org.apache.aurora.scheduler.resources.ResourceType;
@@ -175,7 +165,7 @@ public class ExecutorModule extends AbstractModule {
 
       configsBuilder.put(apiConstants.AURORA_EXECUTOR_NAME, makeThermosExecutorConfig());
 
-      if(CUSTOM_EXECUTOR_CONFIG.hasAppliedValue()) {
+      if (CUSTOM_EXECUTOR_CONFIG.hasAppliedValue()) {
         configsBuilder.putAll(
             ExecutorSettingsLoader.read(
                 Files.newBufferedReader(

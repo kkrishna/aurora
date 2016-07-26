@@ -15,11 +15,9 @@ package org.apache.aurora.scheduler.configuration.executor;
 
 import com.google.common.collect.ImmutableMap;
 
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.apache.aurora.scheduler.base.SchedulerException;
 import org.apache.aurora.scheduler.resources.ResourceBag;
 import org.apache.aurora.scheduler.resources.ResourceManager;
 
@@ -32,7 +30,9 @@ public class ExecutorSettings {
   private final ImmutableMap<String, ExecutorConfig> config;
   private final boolean populateDiscoveryInfo;
 
-  public ExecutorSettings(ImmutableMap<String,ExecutorConfig> config, boolean populateDiscoveryInfo) {
+  public ExecutorSettings(ImmutableMap<String,ExecutorConfig> config,
+                          boolean populateDiscoveryInfo) {
+
     this.config = requireNonNull(config);
     this.populateDiscoveryInfo = populateDiscoveryInfo;
   }

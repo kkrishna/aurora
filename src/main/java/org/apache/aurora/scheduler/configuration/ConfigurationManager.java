@@ -276,11 +276,11 @@ public class ConfigurationManager {
     // Docker containers don't require executors, validate the rest
     if (builder.isSetExecutorConfig()) {
 
-      if(!builder.getExecutorConfig().isSetName())  {
+      if (!builder.getExecutorConfig().isSetName())  {
         throw new TaskDescriptionException(INVALID_EXECUTOR_CONFIG);
       }
 
-      if(!executorSettings.executorConfigExists(builder.getExecutorConfig().getName())) {
+      if (!executorSettings.executorConfigExists(builder.getExecutorConfig().getName())) {
         throw new TaskDescriptionException("Configuration for executor '"
             + builder.getExecutorConfig().getName()
             + "' doesn't exist.");
