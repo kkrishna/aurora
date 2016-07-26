@@ -7,7 +7,7 @@ Aurora 0.16.0
 Aurora 0.15.0
 --------------------------------------------------------------------------------
 ## Task
-    * [AURORA-1725] - Expose tier configurations as a debug page 
+    * [AURORA-1725] - Expose tier configurations as a debug page
     * [AURORA-1458] - Add tier into the UI "show config" summary
     * [AURORA-1720] - Broken link in http://aurora.apache.org/
     * [AURORA-1723] - Add support for Mesos Fetcher

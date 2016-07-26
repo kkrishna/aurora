@@ -94,8 +94,10 @@ public final class TaskTestUtil {
       .setName(apiConstants.AURORA_EXECUTOR_NAME)
       .setCommand(Protos.CommandInfo.newBuilder().build()).build();
   public static final ExecutorSettings EXECUTOR_SETTINGS = new ExecutorSettings(
-      ImmutableMap.<String, ExecutorConfig>builder().put(EXECUTOR_INFO.getName(),
-          new ExecutorConfig(EXECUTOR_INFO, ImmutableList.of())).build(), false);
+      ImmutableMap.<String, ExecutorConfig>builder()
+          .put(EXECUTOR_INFO.getName(), new ExecutorConfig(EXECUTOR_INFO, ImmutableList.of()))
+          .build(),
+      false);
   public static final ConfigurationManager CONFIGURATION_MANAGER =
       new ConfigurationManager(CONFIGURATION_MANAGER_SETTINGS,
           TIER_MANAGER,
