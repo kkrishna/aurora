@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.aurora.gen.apiConstants;
 import org.apache.aurora.scheduler.configuration.executor.ExecutorSettingsLoader.ExecutorConfigException;
 import org.apache.aurora.scheduler.mesos.TestExecutorSettings;
-import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.Volume;
 import org.apache.mesos.Protos.Volume.Mode;
 import org.junit.Test;
@@ -76,7 +75,7 @@ public class ExecutorSettingsLoaderTest {
         new InputStreamReader(getClass().getResourceAsStream(name), Charsets.UTF_8));
   }
 
-  private void assertParsedResult(Map<String ,ExecutorConfig> expected, String file)
+  private void assertParsedResult(Map<String, ExecutorConfig> expected, String file)
       throws ExecutorConfigException {
 
     assertEquals(expected, loadResource(file));
