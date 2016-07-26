@@ -160,7 +160,7 @@ public interface MesosTaskFactory {
           executorOverhead = executorSettings.getExecutorOverhead(
               config.getExecutorConfig().getName()).get();
         } catch (NoSuchElementException e) {
-          throw new SchedulerException(e);
+          throw new SchedulerException("Configuration for executor used by task not found.");
         }
       }
 
@@ -219,16 +219,8 @@ public interface MesosTaskFactory {
         throw new SchedulerException("Task had no supported container set.");
       }
 
-      if (taskBuilder.hasExecutor()
-          && task.getTask()
-              .getExecutorConfig()
-              .getName()
-              .equals(apiConstants.AURORA_EXECUTOR_NAME)) {
+      taskBuilder.setData(ByteString.copyFrom(serializeTask(task)));
 
-        taskBuilder.setData(ByteString.copyFrom(serializeTask(task)));
-      } else if (taskBuilder.hasExecutor()) {
-        taskBuilder.setData(ByteString.copyFromUtf8(task.getTask().getExecutorConfig().getData()));
-      }
       return taskBuilder.build();
     }
 
