@@ -13,6 +13,9 @@
   from Mesos. This has affected rendering of some of the existing attributes. Furthermore, it now
   dumps additional offer attributes including [reservations](http://mesos.apache.org/documentation/latest/reservation/)
   and [persistent volumes](http://mesos.apache.org/documentation/latest/persistent-volume/).
+- Scheduler is now able to launch jobs using more than one executor at a time. To use this feature
+  the `-custom_executor_config` flag must point to a JSON file which contains at least one valid
+  executor configuration as detailed in the [configuration](http://aurora.apache.org/documentation/latest/operations/configuration/) documentation.
 
 ### Deprecations and removals:
 
