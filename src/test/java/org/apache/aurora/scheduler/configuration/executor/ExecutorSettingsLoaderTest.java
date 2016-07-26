@@ -20,6 +20,7 @@ import java.util.Map;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 
+import org.apache.aurora.gen.apiConstants;
 import org.apache.aurora.scheduler.configuration.executor.ExecutorSettingsLoader.ExecutorConfigException;
 import org.apache.aurora.scheduler.mesos.TestExecutorSettings;
 import org.apache.mesos.Protos.Volume;
@@ -29,7 +30,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class ExecutorSettingsLoaderTest {
-  private static final String EXECUTOR_NAME = "thermos";
+  private static final String EXECUTOR_NAME = apiConstants.AURORA_EXECUTOR_NAME;
   private static final ExecutorConfig THERMOS_CONFIG = new ExecutorConfig(
       TestExecutorSettings.THERMOS_CONFIG.getExecutor(),
       ImmutableList.of(

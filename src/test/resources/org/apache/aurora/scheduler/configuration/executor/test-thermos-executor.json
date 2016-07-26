@@ -1,7 +1,7 @@
 [
   {
     "executor": {
-      "name": "thermos",
+      "name": "AuroraExecutor",
       "command": {
         "value": "thermos_executor.pex",
         "arguments": [

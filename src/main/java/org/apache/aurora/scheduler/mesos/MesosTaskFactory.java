@@ -23,6 +23,7 @@ import javax.inject.Inject;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
@@ -37,6 +38,7 @@ import org.apache.aurora.scheduler.base.SchedulerException;
 import org.apache.aurora.scheduler.base.Tasks;
 import org.apache.aurora.scheduler.configuration.executor.ExecutorSettings;
 import org.apache.aurora.scheduler.resources.AcceptedOffer;
+import org.apache.aurora.scheduler.resources.ResourceBag;
 import org.apache.aurora.scheduler.resources.ResourceManager;
 import org.apache.aurora.scheduler.storage.entities.IAppcImage;
 import org.apache.aurora.scheduler.storage.entities.IAssignedTask;
@@ -151,16 +153,28 @@ public interface MesosTaskFactory {
       requireNonNull(offer);
 
       ITaskConfig config = task.getTask();
-      String executorName = config.getExecutorConfig().getName();
+
+
+      ResourceBag executorOverhead = ResourceBag.EMPTY; // Docker tasks don't need executors
+      if(config.isSetExecutorConfig()) {
+        // If an executor config is provided, the configuration must exist for the executor chosen.
+        try {
+          executorOverhead = executorSettings.getExecutorOverhead(
+              config.getExecutorConfig().getName()).get();
+        } catch (NoSuchElementException e) {
+         throw new SchedulerException(e);
+        }
+      }
+
       AcceptedOffer acceptedOffer;
       // TODO(wfarner): Re-evaluate if/why we need to continue handling unset assignedPorts field.
       try {
         acceptedOffer = AcceptedOffer.create(
             offer,
             task,
-            executorSettings.getExecutorOverhead(executorName).get(),
+            executorOverhead,
             tierManager.getTier(task.getTask()));
-      } catch (ResourceManager.InsufficientResourcesException | NoSuchElementException e) {
+      } catch (ResourceManager.InsufficientResourcesException e) {
         throw new SchedulerException(e);
       }
       Iterable<Resource> resources = acceptedOffer.getTaskResources();
@@ -268,7 +282,10 @@ public interface MesosTaskFactory {
       return ContainerInfo.newBuilder()
           .setType(ContainerInfo.Type.DOCKER)
           .setDocker(dockerBuilder.build())
-          .addAllVolumes(executorSettings.getExecutorConfig(getExecutorName(task)).getVolumeMounts())
+          .addAllVolumes(
+              task.getTask().isSetExecutorConfig() ?
+                  executorSettings.getExecutorConfig(getExecutorName(task)).getVolumeMounts() :
+                  ImmutableList.of())
           .build();
     }
 

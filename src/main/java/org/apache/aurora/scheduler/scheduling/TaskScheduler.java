@@ -135,12 +135,14 @@ public interface TaskScheduler extends EventSubscriber {
               IScheduledTask::getAssignedTask),
           null);
 
-      String executorName = assignedTask.getTask().getExecutorConfig().getName();
+
       if (assignedTask == null) {
         LOG.warn("Failed to look up task " + taskId + ", it may have been deleted.");
-      } else if (!executorSettings.executorConfigExists(executorName)) {
+      } else if (assignedTask.getTask().isSetExecutorConfig()  &&
+          !executorSettings.executorConfigExists(
+              assignedTask.getTask().getExecutorConfig().getName())) {
         LOG.warn("Cannot find executor configuration "
-            + executorName
+            + assignedTask.getTask().getExecutorConfig().getName()
             + " for task "
             + taskId + ".");
       } else {
