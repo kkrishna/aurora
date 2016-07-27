@@ -160,7 +160,7 @@ public interface MesosTaskFactory {
           executorOverhead = executorSettings.getExecutorOverhead(
               config.getExecutorConfig().getName()).get();
         } catch (NoSuchElementException e) {
-          throw new SchedulerException("Configuration for executor used by task not found.");
+          throw new SchedulerException("Configuration for executor used by task not found.", e);
         }
       }
 
@@ -219,7 +219,9 @@ public interface MesosTaskFactory {
         throw new SchedulerException("Task had no supported container set.");
       }
 
-      taskBuilder.setData(ByteString.copyFrom(serializeTask(task)));
+      if (taskBuilder.hasExecutor()) {
+        taskBuilder.setData(ByteString.copyFrom(serializeTask(task)));
+      }
 
       return taskBuilder.build();
     }
