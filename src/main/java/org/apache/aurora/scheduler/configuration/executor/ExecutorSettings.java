@@ -17,8 +17,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.apache.aurora.scheduler.resources.ResourceBag;
 import org.apache.aurora.scheduler.resources.ResourceManager;
 
@@ -30,6 +28,7 @@ import static java.util.Objects.requireNonNull;
 public class ExecutorSettings {
   private final Map<String, ExecutorConfig> config;
   private final boolean populateDiscoveryInfo;
+
 
   public ExecutorSettings(
       Map<String, ExecutorConfig> config,

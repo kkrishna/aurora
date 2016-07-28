@@ -153,7 +153,8 @@ public interface MesosTaskFactory {
 
       ITaskConfig config = task.getTask();
 
-      ResourceBag executorOverhead = ResourceBag.EMPTY; // Docker tasks don't need executors
+      // Docker-based tasks don't need executors
+      ResourceBag executorOverhead = ResourceBag.EMPTY;
       if (config.isSetExecutorConfig()) {
           executorOverhead = executorSettings.getExecutorOverhead(
               config.getExecutorConfig().getName()).orElse(ResourceBag.EMPTY);

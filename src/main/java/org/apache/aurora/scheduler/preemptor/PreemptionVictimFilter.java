@@ -206,6 +206,11 @@ public interface PreemptionVictimFilter {
         return Optional.absent();
       }
 
+      ResourceBag overhead = pendingTask.isSetExecutorConfig()
+          ? executorSettings.getExecutorOverhead(
+              pendingTask.getExecutorConfig().getName()).orElse(ResourceBag.EMPTY)
+          : ResourceBag.EMPTY;
+
       ResourceBag totalResource = slackResources;
       for (PreemptionVictim victim : sortedVictims) {
         toPreemptTasks.add(victim);
@@ -214,9 +219,7 @@ public interface PreemptionVictimFilter {
             new UnusedResource(totalResource, attributes.get()),
             new ResourceRequest(
                 pendingTask,
-                ResourceManager.bagFromResources(pendingTask.getResources())
-                    .add(executorSettings.getExecutorOverhead(
-                        pendingTask.getExecutorConfig().getName()).get()),
+                ResourceManager.bagFromResources(pendingTask.getResources()).add(overhead),
                 jobState));
 
         if (vetoes.isEmpty()) {

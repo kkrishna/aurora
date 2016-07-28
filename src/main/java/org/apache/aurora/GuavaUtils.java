@@ -15,7 +15,6 @@ package org.apache.aurora;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
@@ -86,8 +85,7 @@ public final class GuavaUtils {
    */
   public static <T, K, V> Collector<T, ?, ImmutableMap<K, V>> toImmutableMap(
       Function<? super T, ? extends K> keyMapper,
-      Function<? super T, ? extends V> valueMapper
-  ) {
+      Function<? super T, ? extends V> valueMapper) {
     return Collector.of(
         ImmutableMap.Builder<K, V>::new,
         (r, t) -> r.put(keyMapper.apply(t), valueMapper.apply(t)),
