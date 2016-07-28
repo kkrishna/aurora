@@ -151,8 +151,15 @@ The flag must be set to the path of a valid executor configuration file.
 The configuration file must be a valid **JSON array** and contain, at minimum,
 one executor configuration including the name, command and resources fields.
 
+### Array Entry 
 
-### executor
+Property                 | Description
+-----------------------  | ---------------------------------
+executor (required)      | Description of executor.
+task_prefix (required) ) | Prefix given to tasks launched with this executor's configuration.
+volume_mounts (optional) | Volumes to be mounted in container running executor.
+
+#### executor
 
 Property                 | Description
 -----------------------  | ---------------------------------
@@ -207,7 +214,6 @@ Property                  | Description
 host_path (required)      | Host path to mount inside the container.
 container_path (required) | Path inside the container where `host_path` will be mounted.
 mode (required)           | Mode in which to mount the volume, Read-Write (RW) or Read-Only (RO).
-
 
 A sample configuration is as follows:
 ```
@@ -266,7 +272,8 @@ A sample configuration is as follows:
           "container_path": "/container",
           "host_path": "/host"
         }
-      ]
+      ],
+      "task_prefix": "my-executor-"
     }
 ]
 
