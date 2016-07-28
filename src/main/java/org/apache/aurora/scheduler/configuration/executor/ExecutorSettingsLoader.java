@@ -23,10 +23,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 import com.google.protobuf.UninitializedMessageException;
 import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 
+import org.apache.aurora.GuavaUtils;
 import org.apache.mesos.Protos.ExecutorID;
 import org.apache.mesos.Protos.ExecutorInfo;
 import org.apache.mesos.Protos.Volume;
@@ -58,7 +61,7 @@ public final class ExecutorSettingsLoader {
    * Reads an executor configuration from a JSON-encoded source.
    *
    * @param input The configuration data source.
-   * @return An map of executor configurations.
+   * @return A map of executor configurations.
    * @throws ExecutorConfigException If the input cannot be read or is not properly formatted.
    */
   public static Map<String, ExecutorConfig> read(Readable input) throws ExecutorConfigException {
@@ -79,7 +82,7 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorConfigException(e);
     }
 
-    Map<ExecutorInfo, List<Volume>> executorInfos = new HashMap<ExecutorInfo, List<Volume>>();
+    Map<ExecutorInfo, List<Volume>> executorInfos = Maps.newHashMap();
     try {
       // We apply a placeholder value for the executor ID so that we can construct and validate
       // the protobuf schema.  This allows us to catch many validation errors here rather than
@@ -93,11 +96,15 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorConfigException(e);
     }
 
-    Map<String, ExecutorConfig> multiExecutors = new HashMap<String, ExecutorConfig>();
-    executorInfos.forEach((e, v) -> multiExecutors.put(e.getName(),
-        new ExecutorConfig(e, Optional.fromNullable(v).or(ImmutableList.of()))));
+    return executorInfos.entrySet()
+        .stream()
+        .collect(
+            GuavaUtils.toImmutableMap(
+                m -> m.getKey().getName(),
+                m -> new ExecutorConfig(
+                    m.getKey(),
+                    Optional.fromNullable(m.getValue()).or(ImmutableList.of()))));
 
-    return multiExecutors;
   }
 
   /**

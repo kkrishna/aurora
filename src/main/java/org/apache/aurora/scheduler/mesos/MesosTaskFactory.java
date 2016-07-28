@@ -155,13 +155,8 @@ public interface MesosTaskFactory {
 
       ResourceBag executorOverhead = ResourceBag.EMPTY; // Docker tasks don't need executors
       if (config.isSetExecutorConfig()) {
-        // If an executor config is provided, the configuration must exist for the executor chosen.
-        try {
           executorOverhead = executorSettings.getExecutorOverhead(
-              config.getExecutorConfig().getName()).get();
-        } catch (NoSuchElementException e) {
-          throw new SchedulerException("Configuration for executor used by task not found.", e);
-        }
+              config.getExecutorConfig().getName()).orElse(ResourceBag.EMPTY);
       }
 
       AcceptedOffer acceptedOffer;
@@ -197,8 +192,8 @@ public interface MesosTaskFactory {
         ExecutorInfo.Builder executorInfoBuilder = configureTaskForExecutor(task, acceptedOffer);
 
         Optional<ContainerInfo.Builder> containerInfoBuilder = configureTaskForImage(
-            task,
-            task.getTask().getContainer().getMesos());
+            task.getTask().getContainer().getMesos(),
+            task.getTask().getExecutorConfig().getName());
         if (containerInfoBuilder.isPresent()) {
           executorInfoBuilder.setContainer(containerInfoBuilder.get());
         }
@@ -208,11 +203,13 @@ public interface MesosTaskFactory {
         IDockerContainer dockerContainer = config.getContainer().getDocker();
         if (config.isSetExecutorConfig()) {
           ExecutorInfo.Builder execBuilder = configureTaskForExecutor(task, acceptedOffer)
-              .setContainer(getDockerContainerInfo(task, dockerContainer));
+              .setContainer(getDockerContainerInfo(
+                  dockerContainer,
+                  Optional.of(task.getTask().getExecutorConfig().getName())));
           taskBuilder.setExecutor(execBuilder.build());
         } else {
           LOG.warn("Running Docker-based task without an executor.");
-          taskBuilder.setContainer(getDockerContainerInfo(task, dockerContainer))
+          taskBuilder.setContainer(getDockerContainerInfo(dockerContainer, Optional.absent()))
               .setCommand(CommandInfo.newBuilder().setShell(false));
         }
       } else {
@@ -227,8 +224,8 @@ public interface MesosTaskFactory {
     }
 
     private Optional<ContainerInfo.Builder> configureTaskForImage(
-        IAssignedTask task,
-        IMesosContainer mesosContainer) {
+        IMesosContainer mesosContainer,
+        String executorName) {
       requireNonNull(mesosContainer);
 
       if (mesosContainer.isSetImage()) {
@@ -261,14 +258,17 @@ public interface MesosTaskFactory {
         return Optional.of(ContainerInfo.newBuilder()
             .setType(ContainerInfo.Type.MESOS)
             .setMesos(mesosContainerBuilder)
-            .addAllVolumes(executorSettings.getExecutorConfig(getExecutorName(task))
+            .addAllVolumes(executorSettings.getExecutorConfig(executorName).get()
                 .getVolumeMounts()));
       }
 
       return Optional.absent();
     }
 
-    private ContainerInfo getDockerContainerInfo(IAssignedTask task, IDockerContainer config) {
+    private ContainerInfo getDockerContainerInfo(
+        IDockerContainer config,
+        Optional<String> executorName) {
+
       Iterable<Protos.Parameter> parameters = Iterables.transform(config.getParameters(),
           item -> Protos.Parameter.newBuilder().setKey(item.getName())
             .setValue(item.getValue()).build());
@@ -279,8 +279,8 @@ public interface MesosTaskFactory {
           .setType(ContainerInfo.Type.DOCKER)
           .setDocker(dockerBuilder.build())
           .addAllVolumes(
-              task.getTask().isSetExecutorConfig()
-                  ? executorSettings.getExecutorConfig(getExecutorName(task)).getVolumeMounts()
+              executorName.isPresent()
+                  ? executorSettings.getExecutorConfig(executorName.get()).get().getVolumeMounts()
                   : ImmutableList.of())
           .build();
     }
@@ -290,7 +290,7 @@ public interface MesosTaskFactory {
         AcceptedOffer acceptedOffer) {
 
       ExecutorInfo.Builder builder =
-          executorSettings.getExecutorConfig(getExecutorName(task))
+          executorSettings.getExecutorConfig(getExecutorName(task)).get()
           .getExecutor()
           .toBuilder()
           .setExecutorId(getExecutorId(task.getTaskId(), getExecutorName(task)))

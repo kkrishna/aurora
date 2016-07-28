@@ -73,7 +73,9 @@ public final class TestExecutorSettings {
       false /* populate discovery info */);
 
   public static ExecutorSettings thermosOnlyWithOverhead(Iterable<Resource> resources) {
-    ExecutorConfig config = THERMOS_EXECUTOR.getExecutorConfig(THERMOS_EXECUTOR_INFO.getName());
+    ExecutorConfig config =
+        THERMOS_EXECUTOR.getExecutorConfig(THERMOS_EXECUTOR_INFO.getName()).get();
+
     ExecutorInfo.Builder executor = config.getExecutor().toBuilder();
     executor.clearResources().addAllResources(resources);
     return new ExecutorSettings(

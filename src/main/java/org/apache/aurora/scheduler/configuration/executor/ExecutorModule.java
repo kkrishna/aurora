@@ -162,7 +162,6 @@ public class ExecutorModule extends AbstractModule {
                 .addResources(makeResource(RAM_MB, EXECUTOR_OVERHEAD_RAM.get().as(Data.MB)))
                 .build(),
             volumeMounts);
-        //POPULATE_DISCOVERY_INFO.get());
   }
 
   private static ExecutorSettings makeExecutorSettings() {

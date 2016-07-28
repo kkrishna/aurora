@@ -261,7 +261,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
         purgeZeroResources(populateDynamicFields(
             NO_OVERHEAD_EXECUTOR.getExecutorConfig(TASK.getTask()
                 .getExecutorConfig()
-                .getName())
+                .getName()).get()
                 .getExecutor(),
             TASK)),
         makeComparable(task.getExecutor()));
@@ -350,7 +350,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
 
     TaskInfo taskInfo = taskFactory.createFrom(TASK_WITH_DOCKER, OFFER_THERMOS_EXECUTOR);
     assertEquals(
-        config.getExecutorConfig(TASK_WITH_DOCKER.getTask().getExecutorConfig().getName())
+        config.getExecutorConfig(TASK_WITH_DOCKER.getTask().getExecutorConfig().getName()).get()
             .getVolumeMounts(),
         taskInfo.getExecutor().getContainer().getVolumesList());
   }
@@ -461,7 +461,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
                     .setDocker(Protos.Image.Docker.newBuilder()
                         .setName(imageName + ":" + imageTag))))
             .addAllVolumes(EXECUTOR_SETTINGS_WITH_VOLUMES
-                .getExecutorConfig(TASK.getTask().getExecutorConfig().getName())
+                .getExecutorConfig(TASK.getTask().getExecutorConfig().getName()).get()
                 .getVolumeMounts())
             .build(),
         task.getExecutor().getContainer());
@@ -497,7 +497,7 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
                         .setName(imageName)
                         .setId(imageId))))
             .addAllVolumes(EXECUTOR_SETTINGS_WITH_VOLUMES
-                .getExecutorConfig(TASK.getTask().getExecutorConfig().getName())
+                .getExecutorConfig(TASK.getTask().getExecutorConfig().getName()).get()
                 .getVolumeMounts())
             .build(),
         task.getExecutor().getContainer());

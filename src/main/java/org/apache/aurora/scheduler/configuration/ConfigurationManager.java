@@ -280,11 +280,10 @@ public class ConfigurationManager {
         throw new TaskDescriptionException(INVALID_EXECUTOR_CONFIG);
       }
 
-      if (!executorSettings.executorConfigExists(builder.getExecutorConfig().getName())) {
-        throw new TaskDescriptionException("Configuration for executor '"
-            + builder.getExecutorConfig().getName()
-            + "' doesn't exist.");
-      }
+      executorSettings.getExecutorConfig(builder.getExecutorConfig().getName()).orElseThrow(
+          () -> new TaskDescriptionException("Configuration for executor '"
+              + builder.getExecutorConfig().getName()
+              + "' doesn't exist."));
     }
 
     // Maximize the usefulness of any thrown error message by checking required fields first.
