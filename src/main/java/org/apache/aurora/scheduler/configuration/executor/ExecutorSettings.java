@@ -29,7 +29,6 @@ public class ExecutorSettings {
   private final Map<String, ExecutorConfig> config;
   private final boolean populateDiscoveryInfo;
 
-
   public ExecutorSettings(
       Map<String, ExecutorConfig> config,
       boolean populateDiscoveryInfo) {
@@ -47,9 +46,9 @@ public class ExecutorSettings {
   }
 
   public Optional<ResourceBag> getExecutorOverhead(String name) {
-    if(config.containsKey(name)){
-      return Optional.of(ResourceManager.bagFromMesosResources(
-          config.get(name).getExecutor().getResourcesList()));
+    if (config.containsKey(name)) {
+      return Optional.of(
+          ResourceManager.bagFromMesosResources(config.get(name).getExecutor().getResourcesList()));
     } else {
       return Optional.empty();
     }

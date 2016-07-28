@@ -135,7 +135,6 @@ public interface TaskScheduler extends EventSubscriber {
               IScheduledTask::getAssignedTask),
           null);
 
-
       if (assignedTask == null) {
         LOG.warn("Failed to look up task " + taskId + ", it may have been deleted.");
       } else {
@@ -144,10 +143,10 @@ public interface TaskScheduler extends EventSubscriber {
 
         // Valid Docker tasks can have a container but no executor config
         ResourceBag overhead = ResourceBag.EMPTY;
-        if(task.isSetExecutorConfig()) {
-            overhead = executorSettings.getExecutorOverhead(task.getExecutorConfig().getName())
-                .orElseThrow(
-                    () -> new IllegalArgumentException("Cannot find executor configuration"));
+        if (task.isSetExecutorConfig()) {
+          overhead = executorSettings.getExecutorOverhead(task.getExecutorConfig().getName())
+              .orElseThrow(
+                  () -> new IllegalArgumentException("Cannot find executor configuration"));
         }
 
         boolean launched = assigner.maybeAssign(

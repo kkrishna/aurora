@@ -108,7 +108,7 @@ public interface MesosTaskFactory {
 
     @VisibleForTesting
     static ExecutorID getExecutorId(String taskId, String taskPrefix) {
-        return ExecutorID.newBuilder().setValue(taskPrefix + taskId).build();
+      return ExecutorID.newBuilder().setValue(taskPrefix + taskId).build();
     }
 
     private static String getJobSourceName(IJobKey jobkey) {
@@ -152,8 +152,8 @@ public interface MesosTaskFactory {
       // Docker-based tasks don't need executors
       ResourceBag executorOverhead = ResourceBag.EMPTY;
       if (config.isSetExecutorConfig()) {
-          executorOverhead =
-              executorSettings.getExecutorOverhead(getExecutorName(task)).orElse(ResourceBag.EMPTY);
+        executorOverhead =
+            executorSettings.getExecutorOverhead(getExecutorName(task)).orElse(ResourceBag.EMPTY);
       }
 
       AcceptedOffer acceptedOffer;

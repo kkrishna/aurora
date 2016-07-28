@@ -65,7 +65,6 @@ public final class TestExecutorSettings {
 
   public static final String THERMOS_TASK_PREFIX = "thermos-";
 
-
   public static final ExecutorConfig THERMOS_CONFIG =
       new ExecutorConfig(THERMOS_EXECUTOR_INFO, ImmutableList.of(), THERMOS_TASK_PREFIX);
 
