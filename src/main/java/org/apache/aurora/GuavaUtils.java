@@ -92,7 +92,8 @@ public final class GuavaUtils {
         ImmutableMap.Builder<K, V>::new,
         (r, t) -> r.put(keyMapper.apply(t), valueMapper.apply(t)),
         (l, r) -> l.putAll(r.build()),
-        ImmutableMap.Builder::build);
+        ImmutableMap.Builder::build,
+        UNORDERED);
   }
 
   /**
