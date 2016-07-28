@@ -63,8 +63,11 @@ public final class TestExecutorSettings {
       ))
       .build();
 
+  public static final String THERMOS_TASK_PREFIX = "thermos-";
+
+
   public static final ExecutorConfig THERMOS_CONFIG =
-      new ExecutorConfig(THERMOS_EXECUTOR_INFO, ImmutableList.of());
+      new ExecutorConfig(THERMOS_EXECUTOR_INFO, ImmutableList.of(), THERMOS_TASK_PREFIX);
 
   public static final ExecutorSettings THERMOS_EXECUTOR = new ExecutorSettings(
       ImmutableMap.<String, ExecutorConfig>builder()
@@ -81,7 +84,10 @@ public final class TestExecutorSettings {
     return new ExecutorSettings(
         ImmutableMap.<String, ExecutorConfig>builder().put(
             apiConstants.AURORA_EXECUTOR_NAME,
-            new ExecutorConfig(executor.build(), config.getVolumeMounts())).build(),
+            new ExecutorConfig(
+                executor.build(),
+                config.getVolumeMounts(),
+                THERMOS_TASK_PREFIX)).build(),
         false /* populate discovery info */);
   }
 }

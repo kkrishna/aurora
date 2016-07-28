@@ -15,7 +15,6 @@ package org.apache.aurora.scheduler.mesos;
 
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,7 +30,6 @@ import com.google.protobuf.ByteString;
 import org.apache.aurora.GuavaUtils;
 import org.apache.aurora.Protobufs;
 import org.apache.aurora.codec.ThriftBinaryCodec;
-import org.apache.aurora.gen.apiConstants;
 import org.apache.aurora.scheduler.TierManager;
 import org.apache.aurora.scheduler.base.JobKeys;
 import org.apache.aurora.scheduler.base.SchedulerException;
@@ -86,7 +84,6 @@ public interface MesosTaskFactory {
   // TODO(wfarner): Move this class to its own file to reduce visibility to package private.
   class MesosTaskFactoryImpl implements MesosTaskFactory {
     private static final Logger LOG = LoggerFactory.getLogger(MesosTaskFactoryImpl.class);
-    private static final String EXECUTOR_PREFIX = "thermos-";
 
     @VisibleForTesting
     static final String METADATA_LABEL_PREFIX = "org.apache.aurora.metadata.";
@@ -110,13 +107,8 @@ public interface MesosTaskFactory {
     }
 
     @VisibleForTesting
-    static ExecutorID getExecutorId(String taskId, String executorName) {
-
-      if (executorName.equals(apiConstants.AURORA_EXECUTOR_NAME)) {
-        return ExecutorID.newBuilder().setValue(EXECUTOR_PREFIX + taskId).build();
-      } else {
-        return ExecutorID.newBuilder().setValue(executorName + "-" + taskId).build();
-      }
+    static ExecutorID getExecutorId(String taskId, String taskPrefix) {
+        return ExecutorID.newBuilder().setValue(taskPrefix + taskId).build();
     }
 
     private static String getJobSourceName(IJobKey jobkey) {
@@ -125,6 +117,10 @@ public interface MesosTaskFactory {
 
     private static String getJobSourceName(ITaskConfig task) {
       return getJobSourceName(task.getJob());
+    }
+
+    private static String getExecutorName(IAssignedTask task) {
+      return task.getTask().getExecutorConfig().getName();
     }
 
     @VisibleForTesting
@@ -156,8 +152,8 @@ public interface MesosTaskFactory {
       // Docker-based tasks don't need executors
       ResourceBag executorOverhead = ResourceBag.EMPTY;
       if (config.isSetExecutorConfig()) {
-          executorOverhead = executorSettings.getExecutorOverhead(
-              config.getExecutorConfig().getName()).orElse(ResourceBag.EMPTY);
+          executorOverhead =
+              executorSettings.getExecutorOverhead(getExecutorName(task)).orElse(ResourceBag.EMPTY);
       }
 
       AcceptedOffer acceptedOffer;
@@ -194,7 +190,7 @@ public interface MesosTaskFactory {
 
         Optional<ContainerInfo.Builder> containerInfoBuilder = configureTaskForImage(
             task.getTask().getContainer().getMesos(),
-            task.getTask().getExecutorConfig().getName());
+            getExecutorName(task));
         if (containerInfoBuilder.isPresent()) {
           executorInfoBuilder.setContainer(containerInfoBuilder.get());
         }
@@ -206,7 +202,7 @@ public interface MesosTaskFactory {
           ExecutorInfo.Builder execBuilder = configureTaskForExecutor(task, acceptedOffer)
               .setContainer(getDockerContainerInfo(
                   dockerContainer,
-                  Optional.of(task.getTask().getExecutorConfig().getName())));
+                  Optional.of(getExecutorName(task))));
           taskBuilder.setExecutor(execBuilder.build());
         } else {
           LOG.warn("Running Docker-based task without an executor.");
@@ -294,7 +290,9 @@ public interface MesosTaskFactory {
           executorSettings.getExecutorConfig(getExecutorName(task)).get()
           .getExecutor()
           .toBuilder()
-          .setExecutorId(getExecutorId(task.getTaskId(), getExecutorName(task)))
+          .setExecutorId(getExecutorId(
+              task.getTaskId(),
+              executorSettings.getExecutorConfig(getExecutorName(task)).get().getTaskPrefix()))
           .setSource(getInstanceSourceName(task.getTask(), task.getInstanceId()));
 
       //TODO: (rdelvalle) add output_file when Aurora's Mesos dep is updated (MESOS-4735)
@@ -345,8 +343,5 @@ public interface MesosTaskFactory {
       }
     }
 
-    private static String getExecutorName(IAssignedTask task) {
-      return task.getTask().getExecutorConfig().getName();
-    }
   }
 }

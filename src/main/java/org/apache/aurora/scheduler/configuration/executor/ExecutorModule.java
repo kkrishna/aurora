@@ -105,6 +105,8 @@ public class ExecutorModule extends AbstractModule {
       help = "If true, Aurora populates DiscoveryInfo field of Mesos TaskInfo.")
   private static final Arg<Boolean> POPULATE_DISCOVERY_INFO = Arg.create(false);
 
+  private static final String THERMOS_TASK_PREFIX = "thermos-";
+
   @VisibleForTesting
   static CommandInfo makeExecutorCommand(
       String thermosExecutorPath,
@@ -148,20 +150,21 @@ public class ExecutorModule extends AbstractModule {
             .build();
 
     return new ExecutorConfig(
-            ExecutorInfo.newBuilder()
-                .setName(apiConstants.AURORA_EXECUTOR_NAME)
-                // Necessary as executorId is a required field.
-                .setExecutorId(Executors.PLACEHOLDER_EXECUTOR_ID)
-                .setCommand(
-                    makeExecutorCommand(
-                        THERMOS_EXECUTOR_PATH.get(),
-                        THERMOS_EXECUTOR_RESOURCES.get(),
-                        THERMOS_HOME_IN_SANDBOX.get(),
-                        THERMOS_EXECUTOR_FLAGS.get()))
-                .addResources(makeResource(CPUS, EXECUTOR_OVERHEAD_CPUS.get()))
-                .addResources(makeResource(RAM_MB, EXECUTOR_OVERHEAD_RAM.get().as(Data.MB)))
-                .build(),
-            volumeMounts);
+        ExecutorInfo.newBuilder()
+            .setName(apiConstants.AURORA_EXECUTOR_NAME)
+            // Necessary as executorId is a required field.
+            .setExecutorId(Executors.PLACEHOLDER_EXECUTOR_ID)
+            .setCommand(
+                makeExecutorCommand(
+                    THERMOS_EXECUTOR_PATH.get(),
+                    THERMOS_EXECUTOR_RESOURCES.get(),
+                    THERMOS_HOME_IN_SANDBOX.get(),
+                    THERMOS_EXECUTOR_FLAGS.get()))
+            .addResources(makeResource(CPUS, EXECUTOR_OVERHEAD_CPUS.get()))
+            .addResources(makeResource(RAM_MB, EXECUTOR_OVERHEAD_RAM.get().as(Data.MB)))
+            .build(),
+        volumeMounts,
+        THERMOS_TASK_PREFIX);
   }
 
   private static ExecutorSettings makeExecutorSettings() {

@@ -47,7 +47,8 @@ public class ExecutorSettingsLoaderTest {
                       .setHostPath("/host")
                       .setContainerPath("/container")
                       .setMode(Mode.RW)
-                      .build()))).build();
+                      .build()),
+              TestExecutorSettings.THERMOS_TASK_PREFIX)).build();
 
   private static final Map<String, ExecutorConfig> THERMOS_CONFIG_MULTI =
       ImmutableMap.<String, ExecutorConfig>builder()
@@ -68,7 +69,8 @@ public class ExecutorSettingsLoaderTest {
                           .setHostPath("/host2")
                           .setContainerPath("/container2")
                           .setMode(Mode.RW)
-                          .build()))).build();
+                          .build()),
+                   TestExecutorSettings.THERMOS_TASK_PREFIX + "2-")).build();
 
   private Map<String, ExecutorConfig> loadResource(String name) throws ExecutorConfigException {
     return ExecutorSettingsLoader.read(

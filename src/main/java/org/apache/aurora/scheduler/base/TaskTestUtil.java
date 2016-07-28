@@ -95,7 +95,7 @@ public final class TaskTestUtil {
       .setCommand(Protos.CommandInfo.newBuilder().build()).build();
   public static final ExecutorSettings EXECUTOR_SETTINGS = new ExecutorSettings(
       ImmutableMap.<String, ExecutorConfig>builder()
-          .put(EXECUTOR_INFO.getName(), new ExecutorConfig(EXECUTOR_INFO, ImmutableList.of()))
+          .put(EXECUTOR_INFO.getName(), new ExecutorConfig(EXECUTOR_INFO, ImmutableList.of(), ""))
           .build(),
       false);
   public static final ConfigurationManager CONFIGURATION_MANAGER =

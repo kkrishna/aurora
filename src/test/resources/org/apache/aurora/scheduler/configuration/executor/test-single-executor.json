@@ -45,6 +45,7 @@
         "container_path": "/container",
         "host_path": "/host"
       }
-    ]
+    ],
+    "task_prefix" : "thermos-"
   }
 ]

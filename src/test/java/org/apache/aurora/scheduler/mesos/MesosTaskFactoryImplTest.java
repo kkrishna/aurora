@@ -70,6 +70,7 @@ import static org.apache.aurora.scheduler.mesos.TaskExecutors.NO_OVERHEAD_EXECUT
 import static org.apache.aurora.scheduler.mesos.TaskExecutors.SOME_OVERHEAD_EXECUTOR;
 import static org.apache.aurora.scheduler.mesos.TestExecutorSettings.THERMOS_CONFIG;
 import static org.apache.aurora.scheduler.mesos.TestExecutorSettings.THERMOS_EXECUTOR;
+import static org.apache.aurora.scheduler.mesos.TestExecutorSettings.THERMOS_TASK_PREFIX;
 import static org.apache.aurora.scheduler.resources.ResourceManager.bagFromMesosResources;
 import static org.apache.aurora.scheduler.resources.ResourceManager.bagFromResources;
 import static org.apache.aurora.scheduler.resources.ResourceTestUtil.mesosRange;
@@ -112,7 +113,8 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
                       Volume.newBuilder()
                           .setHostPath("/host")
                           .setContainerPath("/container")
-                          .setMode(Mode.RO).build()))).build(),
+                          .setMode(Mode.RO).build()),
+                  TestExecutorSettings.THERMOS_TASK_PREFIX)).build(),
       false /* populate discovery info */);
 
   private static final SlaveID SLAVE = SlaveID.newBuilder().setValue("slave-id").build();
@@ -153,7 +155,9 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
   private static ExecutorInfo populateDynamicFields(ExecutorInfo executor, IAssignedTask task) {
     return executor.toBuilder()
         .clearResources()
-        .setExecutorId(MesosTaskFactoryImpl.getExecutorId(task.getTaskId(), executor.getName()))
+        .setExecutorId(MesosTaskFactoryImpl.getExecutorId(
+            task.getTaskId(),
+            THERMOS_EXECUTOR.getExecutorConfig(executor.getName()).get().getTaskPrefix()))
         .setSource(
             MesosTaskFactoryImpl.getInstanceSourceName(task.getTask(), task.getInstanceId()))
         .setCommand(executor.getCommand().toBuilder().addAllUris(

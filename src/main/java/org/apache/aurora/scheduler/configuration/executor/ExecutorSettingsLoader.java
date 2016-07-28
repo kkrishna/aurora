@@ -82,29 +82,24 @@ public final class ExecutorSettingsLoader {
       throw new ExecutorConfigException(e);
     }
 
-    Map<ExecutorInfo, List<Volume>> executorInfos = Maps.newHashMap();
+    Map<String, ExecutorConfig> customExecutors;
     try {
       // We apply a placeholder value for the executor ID so that we can construct and validate
       // the protobuf schema.  This allows us to catch many validation errors here rather than
       // later on when launching tasks.
+      customExecutors = parsed.stream().collect(
+          GuavaUtils.toImmutableMap(
+              m -> m.executor.getName(),
+              m -> new ExecutorConfig(
+                  m.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build(),
+                  Optional.fromNullable(m.volumeMounts).or(ImmutableList.of()),
+                  m.taskPrefix)));
 
-      // Build ExecutorInfo first to let Protobuf validate data
-      parsed.forEach((e) -> executorInfos.put(
-          e.executor.setExecutorId(PLACEHOLDER_EXECUTOR_ID).build(),
-          e.volumeMounts));
     } catch (UninitializedMessageException e) {
       throw new ExecutorConfigException(e);
     }
 
-    return executorInfos.entrySet()
-        .stream()
-        .collect(
-            GuavaUtils.toImmutableMap(
-                m -> m.getKey().getName(),
-                m -> new ExecutorConfig(
-                    m.getKey(),
-                    Optional.fromNullable(m.getValue()).or(ImmutableList.of()))));
-
+    return customExecutors;
   }
 
   /**
@@ -114,6 +109,7 @@ public final class ExecutorSettingsLoader {
   private static class Schema {
     private ExecutorInfo.Builder executor;
     private List<Volume> volumeMounts;
+    private String taskPrefix;
 
     ExecutorInfo.Builder getExecutor() {
       return executor;
@@ -129,6 +125,14 @@ public final class ExecutorSettingsLoader {
 
     void setVolumeMounts(List<Volume> volumeMounts) {
       this.volumeMounts = volumeMounts;
+    }
+
+    String getTaskPrefix() {
+      return taskPrefix;
+    }
+
+    void setTaskPrefix(String taskPrefix) {
+      this.taskPrefix = taskPrefix;
     }
   }
 }
