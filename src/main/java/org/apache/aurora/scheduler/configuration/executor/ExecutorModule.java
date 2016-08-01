@@ -105,8 +105,6 @@ public class ExecutorModule extends AbstractModule {
       help = "If true, Aurora populates DiscoveryInfo field of Mesos TaskInfo.")
   private static final Arg<Boolean> POPULATE_DISCOVERY_INFO = Arg.create(false);
 
-  private static final String THERMOS_TASK_PREFIX = "thermos-";
-
   @VisibleForTesting
   static CommandInfo makeExecutorCommand(
       String thermosExecutorPath,
@@ -164,7 +162,7 @@ public class ExecutorModule extends AbstractModule {
             .addResources(makeResource(RAM_MB, EXECUTOR_OVERHEAD_RAM.get().as(Data.MB)))
             .build(),
         volumeMounts,
-        THERMOS_TASK_PREFIX);
+        "thermos-");
   }
 
   private static ExecutorSettings makeExecutorSettings() {

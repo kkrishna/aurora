@@ -158,8 +158,6 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
         .setExecutorId(MesosTaskFactoryImpl.getExecutorId(
             task.getTaskId(),
             THERMOS_EXECUTOR.getExecutorConfig(executor.getName()).get().getTaskPrefix()))
-        .setSource(
-            MesosTaskFactoryImpl.getInstanceSourceName(task.getTask(), task.getInstanceId()))
         .setLabels(
             Protos.Labels.newBuilder().addLabels(
                 Protos.Label.newBuilder()

@@ -151,7 +151,7 @@ The flag must be set to the path of a valid executor configuration file.
 The configuration file must be a valid **JSON array** and contain, at minimum,
 one executor configuration including the name, command and resources fields.
 
-### Array Entry 
+### Array Entry
 
 Property                 | Description
 -----------------------  | ---------------------------------
