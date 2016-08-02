@@ -114,20 +114,16 @@ public interface PreemptionVictimFilter {
           public ResourceBag apply(PreemptionVictim victim) {
             ResourceBag bag = victim.getResourceBag();
 
-            // Be pessimistic about revocable resource available if config is not available
-            ResourceBag overhead = EMPTY;
             if (victim.getConfig().isSetExecutorConfig()) {
-              overhead = executorSettings.getExecutorOverhead(
-                  victim.getConfig().getExecutorConfig().getName()).orElse(EMPTY);
+              // Be pessimistic about revocable resource available if config is not available
+              bag.add(executorSettings.getExecutorOverhead(
+                  victim.getConfig().getExecutorConfig().getName()).orElse(EMPTY));
             }
 
             if (tierManager.getTier(victim.getConfig()).isRevocable()) {
               // Revocable task CPU cannot be used for preemption purposes as it's a compressible
               // resource. We can still use RAM, DISK and PORTS as they are not compressible.
-              bag = bag.filter(IS_MESOS_REVOCABLE.negate())
-                  .add(overhead.filter(IS_MESOS_REVOCABLE.negate()));
-            } else {
-              bag.add(overhead);
+              bag = bag.filter(IS_MESOS_REVOCABLE.negate());
             }
 
             return bag;
