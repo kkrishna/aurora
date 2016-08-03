@@ -61,6 +61,7 @@ import org.apache.mesos.Protos.Volume.Mode;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.aurora.gen.apiConstants.TASK_FILESYSTEM_MOUNT_POINT;
 import static org.apache.aurora.scheduler.base.TaskTestUtil.DEV_TIER;
 import static org.apache.aurora.scheduler.base.TaskTestUtil.REVOCABLE_TIER;
 import static org.apache.aurora.scheduler.mesos.MesosTaskFactory.MesosTaskFactoryImpl.DEFAULT_PORT_PROTOCOL;
@@ -460,19 +461,20 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
         EXECUTOR_SETTINGS_WITH_VOLUMES,
         tierManager,
         SERVER_INFO);
-
     TaskInfo task = taskFactory.createFrom(taskWithDockerImage, OFFER_THERMOS_EXECUTOR);
     assertEquals(
         ContainerInfo.newBuilder()
             .setType(Type.MESOS)
-            .setMesos(MesosInfo.newBuilder().setImage(
-                Protos.Image.newBuilder()
+            .setMesos(MesosInfo.newBuilder())
+            .addAllVolumes(EXECUTOR_SETTINGS_WITH_VOLUMES.getExecutorConfig(
+                TASK.getTask().getExecutorConfig().getName()).get().getVolumeMounts())
+            .addVolumes(Volume.newBuilder()
+                .setContainerPath(TASK_FILESYSTEM_MOUNT_POINT)
+                .setImage(Protos.Image.newBuilder()
                     .setType(Protos.Image.Type.DOCKER)
                     .setDocker(Protos.Image.Docker.newBuilder()
-                        .setName(imageName + ":" + imageTag))))
-            .addAllVolumes(EXECUTOR_SETTINGS_WITH_VOLUMES
-                .getExecutorConfig(TASK.getTask().getExecutorConfig().getName()).get()
-                .getVolumeMounts())
+                        .setName(imageName + ":" + imageTag)))
+                .setMode(Mode.RO))
             .build(),
         task.getExecutor().getContainer());
   }
@@ -500,15 +502,17 @@ public class MesosTaskFactoryImplTest extends EasyMockTest {
     assertEquals(
         ContainerInfo.newBuilder()
             .setType(Type.MESOS)
-            .setMesos(MesosInfo.newBuilder().setImage(
-                Protos.Image.newBuilder()
+            .setMesos(MesosInfo.newBuilder())
+            .addAllVolumes(EXECUTOR_SETTINGS_WITH_VOLUMES.getExecutorConfig(
+                TASK.getTask().getExecutorConfig().getName()).get().getVolumeMounts())
+            .addVolumes(Volume.newBuilder()
+                .setContainerPath(TASK_FILESYSTEM_MOUNT_POINT)
+                .setImage(Protos.Image.newBuilder()
                     .setType(Protos.Image.Type.APPC)
                     .setAppc(Protos.Image.Appc.newBuilder()
                         .setName(imageName)
-                        .setId(imageId))))
-            .addAllVolumes(EXECUTOR_SETTINGS_WITH_VOLUMES
-                .getExecutorConfig(TASK.getTask().getExecutorConfig().getName()).get()
-                .getVolumeMounts())
+                        .setId(imageId)))
+                .setMode(Mode.RO))
             .build(),
         task.getExecutor().getContainer());
   }
