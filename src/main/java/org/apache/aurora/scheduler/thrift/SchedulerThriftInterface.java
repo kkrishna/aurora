@@ -208,6 +208,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
   public Response createJob(JobConfiguration mutableJob) {
     SanitizedConfiguration sanitized;
     try {
+      System.out.println("===== createJob: JobConfiguration payload: "+mutableJob);
       sanitized = SanitizedConfiguration.fromUnsanitized(
           configurationManager,
           IJobConfiguration.build(mutableJob));
@@ -273,6 +274,8 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
 
     SanitizedConfiguration sanitized;
     try {
+      System.out.println("===== createOrUpdateCronTemplate: JobConfiguration payload: "+mutableJob);
+
       sanitized = SanitizedConfiguration.fromUnsanitized(configurationManager, job);
     } catch (TaskDescriptionException e) {
       return error(INVALID_REQUEST, e);
@@ -358,6 +361,7 @@ class SchedulerThriftInterface implements AnnotatedAuroraAdmin {
   // TODO(William Farner): Provide status information about cron jobs here.
   @Override
   public Response getTasksStatus(TaskQuery query) throws TException {
+    System.out.println(" ==== getTasksStatus TaskQuery : "+query.toString());
     return readOnlyScheduler.getTasksStatus(query);
   }
 
